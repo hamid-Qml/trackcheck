@@ -14,6 +14,7 @@ import { AudioFeature } from './entities/audio-feature.entity';
 @Injectable()
 export class AudioService {
   private readonly UPLOADS_DIR: string;
+  private readonly serveRoot = '/uploads'; // must match ServeStaticModule
 
   constructor(
     private readonly config: ConfigService,
@@ -27,7 +28,11 @@ export class AudioService {
 
   // List uploads for current user
   findAllUploads(userId: string) {
-    return this.uploads.find({ where: { user: { id: userId } }, relations: ['user'], order: { created_at: 'DESC' } });
+    return this.uploads.find({
+      where: { user: { id: userId } },
+      relations: ['user'],
+      order: { created_at: 'DESC' },
+    });
   }
 
   async findUploadOwned(id: string, userId: string) {
@@ -37,33 +42,62 @@ export class AudioService {
     return row;
   }
 
+  private toPosixRel(p: string) {
+    // Normalize Windows separators to URL-friendly slashes
+    return p.split(path.sep).join('/');
+  }
+
+  private toPublicUrl(relPath: string) {
+    const base = this.config.get<string>('BACKEND_PUBLIC_URL') || 'http://localhost:3000';
+    const cleanRel = relPath.replace(/^\/+/, '');
+    return `${base}${this.serveRoot}/${cleanRel}`;
+  }
+
   async createUploadFromFile(userId: string, file?: Express.Multer.File) {
     if (!file) throw new BadRequestException('audio_file is required');
+
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
+    // Ensure uploads dir exists
+    await fs.promises.mkdir(this.UPLOADS_DIR, { recursive: true });
+
     const ext = path.extname(file.originalname || '') || '.bin';
-    const name = `${Date.now()}_${randomBytes(6).toString('hex')}${ext}`;
-    const dest = path.join(this.UPLOADS_DIR, name);
-    await fs.promises.writeFile(dest, file.buffer);
+    const filename = `${Date.now()}_${randomBytes(6).toString('hex')}${ext}`;
+
+    // Absolute destination on disk
+    const destAbs = path.join(this.UPLOADS_DIR, filename);
+
+    // Write the buffer
+    await fs.promises.writeFile(destAbs, file.buffer);
+
+    // Store a **relative** path (relative to UPLOADS_DIR). For subfolders, this still holds.
+    let relativePath = path.relative(this.UPLOADS_DIR, destAbs); // e.g. '2025_...wav'
+    relativePath = this.toPosixRel(relativePath);                // ensure URL-friendly separators
 
     const sizeMb = file.size ? +(file.size / (1024 * 1024)).toFixed(3) : null;
+
     const created = this.uploads.create({
       user,
-      file_path: dest,
-      filename: path.basename(dest),
+      file_path: relativePath, // ✅ relative to the uploads volume
+      filename,
       size_mb: sizeMb ?? undefined,
       status: 'uploaded',
     } as Partial<AudioUpload>);
+
     const saved = await this.uploads.save(created);
+
+    // Public URL (helps clients avoid concatenation logic)
+    const public_url = this.toPublicUrl(relativePath);
 
     return {
       id: saved.id,
       filename: saved.filename,
-      file_path: saved.file_path,
+      file_path: saved.file_path, // relative
       size_mb: saved.size_mb ?? null,
       status: saved.status,
       created_at: saved.created_at,
+      public_url, // e.g. https://api.example.com/uploads/<filename>
     };
   }
 
