@@ -2,9 +2,9 @@ import { FunctionComponent, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./UploadTrack.module.css";
 
-import bg from "@/assets/track-upload-bg.jpg";
-import musicIcon from "@/assets/music-notes-simple.png";
-import arrowRight from "@/assets/icon-arrow-right.png";
+import bg from "@/assets/track-upload-bg.webp";
+import musicIcon from "@/assets/music-notes-simple.webp";
+import arrowRight from "@/assets/icon-arrow-right.webp";
 import LoginDialog from "@/components/LoginDialog";
 import NavBar from "@/components/NavBar";
 import Toast from "@/components/Toast";

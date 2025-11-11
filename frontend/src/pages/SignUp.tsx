@@ -2,8 +2,8 @@ import { FunctionComponent, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./SignUp.module.css";
 
-import logo from "@/assets/trakchek-logo.png";
-import flexVertical from "@/assets/flex-vertical.png";
+import logo from "@/assets/trakchek-logo.webp";
+import flexVertical from "@/assets/flex-vertical.webp";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp: FunctionComponent = () => {

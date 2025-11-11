@@ -1,6 +1,6 @@
 import { FC, useEffect, useRef, useState } from "react";
 import styles from "./LoginDialog.module.css";
-import longLogo from "@/assets/long-logo.png";
+import longLogo from "@/assets/long-logo.webp";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 

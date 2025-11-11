@@ -2,8 +2,8 @@ import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Upload, Music, ArrowRight, LogIn } from "lucide-react";
 
-import bg from "@/assets/track-upload-bg.jpg";
-import logo from "@/assets/logo.png";
+import bg from "@/assets/track-upload-bg.webp";
+import logo from "@/assets/logo.webp";
 
 const Index: React.FC = () => {
   const fileRef = useRef<HTMLInputElement | null>(null);

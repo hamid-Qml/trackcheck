@@ -3,7 +3,7 @@ import styles from "./TrackUploaded.module.css";
 
 import musicNote from "@/assets/MusicNoteSimple.svg";
 import NavBar from "@/components/NavBar";
-import trackUploadedBg from "@/assets/trackUploadedBg.png";
+import trackUploadedBg from "@/assets/trackUploadedBg.webp";
 import { feedbackService } from "@/services/feedbackService";
 
 type UploadedAudio = { uploadId: string; name: string; url: string };

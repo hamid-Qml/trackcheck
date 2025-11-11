@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import styles from "../pages/UploadTrack.module.css";
-import logo from "@/assets/trakchek-logo.png";
+import logo from "@/assets/trakchek-logo.webp";
 
 export default function NavBar() {
   const { user, logout, status } = useAuth();
