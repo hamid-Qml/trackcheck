@@ -1,0 +1,137 @@
+/* ----------- Layout Shell ----------- */
+.signUp {
+  width: 100%;
+  min-height: 100%;           /* inherits from #root 100% */
+  background: #000;
+  display: grid;              /* no centering – we want full bleed */
+  place-items: stretch;
+  color: #fafafa;
+  font-family: "Inter", "Poppins", "Montserrat", sans-serif;
+}
+
+.frame {
+  width: 100%;                /* IMPORTANT: avoid 100vw */
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+/* Two-column container */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* left fixed, right fills */
+  min-height: 100%;                 /* stretch the full page height */
+  background: #050607;
+}
+
+/* LEFT */
+.leftPane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 48px;
+}
+
+.logoRow { margin-bottom: 40px; }
+.trakchekBlk1Icon {
+  width: 72px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+/* Card container (the gray box around form) */
+.formCard {
+  background: #050505;
+  border: 1px solid #1a1a1a;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0.5px rgba(255,255,255,0.05), 0 0 40px rgba(0,0,0,0.6);
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  max-width: 520px;           /* matches the tight, “contained” Figma look */
+}
+
+/* headings */
+.cardHeader { display: grid; gap: 8px; }
+.createAnAccount { font: 700 20px/28px Montserrat, sans-serif; }
+.letsGetStarted  { font: 14px/20px Inter, sans-serif; color: #bdbdbd; }
+
+/* FORM */
+.form { display: grid; gap: 20px; }
+.fieldGroup { display: grid; gap: 6px; }
+.labelRow { display: flex; justify-content: space-between; align-items: baseline; }
+.label { font-weight: 500; font-size: 14px; }
+.hint  { font-size: 12px; color: #717171; }
+
+/* Inputs */
+.input {
+  height: 42px;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
+  background: #0c0c0c;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+.input input {
+  width: 100%;
+  background: transparent;
+  color: #fafafa;
+  border: 0;
+  outline: 0;
+  font-size: 14px;
+}
+.input input::placeholder { color: #565656; }
+
+/* Checkbox + terms */
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #c9c9c9;
+}
+.checkboxRow input { width: 16px; height: 16px; accent-color: #22d3ee; }
+.link { color: #22d3ee; text-decoration: underline; }
+
+/* CTA */
+.cta {
+  margin-top: 8px;
+  height: 46px;
+  border-radius: 8px;
+  background: #000;
+  border: 1px solid #22d3ee;
+  color: #fafafa;
+  font-weight: 600;
+  letter-spacing: .2px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: box-shadow .2s ease;
+  box-shadow: 0 0 6px rgba(34,211,238,.25);
+}
+.cta:hover { box-shadow: 0 0 12px rgba(34,211,238,.4); }
+
+.footerNote { margin-top: 4px; font-size: 13px; text-align: center; color: #bdbdbd; }
+.footerNote .link { margin-left: 4px; }
+
+/* RIGHT (image panel) */
+.rightPane {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: var(--panel-bg);
+  background-repeat: no-repeat;
+  
+  background-size: 100%;       /* fit HEIGHT, keep aspect ratio */
+  /* optional: if you ever see a gap on the left on ultra-wide screens: */
+  background-color: #000;           /* blends with page bg */
+}
+
+
+/* If a thin black line ever appears at extreme widths, overfill slightly: */
+/* .rightPane { background-size: 110% auto; } */

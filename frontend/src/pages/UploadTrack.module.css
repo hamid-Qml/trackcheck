@@ -1,0 +1,280 @@
+.uploadTrack {
+  	width: 100%;
+  	min-height: 100vh; 
+  	position: relative;
+  	background-color: #000;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	text-align: left;
+  	font-size: 14px;
+  	color: #fafafa;
+  	font-family: Poppins;
+}
+.slot {
+  position: relative;                     /* add */
+  background-image: var(--bg-url);
+  background-size: cover;
+  min-height: 100vh;
+  min-width: 100vw;
+  background-repeat: no-repeat;
+  background-position: center -120px;     /* shift beams up; tweak -80..-180px */
+}
+
+/* 2) Global dark veil + top vignette (doesn't affect children) */
+.slot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* veil stack: subtle cyan kill + darken + top vignette */
+  background:
+    radial-gradient(900px 520px at 50% -120px, rgba(0, 20, 28, 0.20) 0%, rgba(0,0,0,0) 65%),
+    linear-gradient(180deg, rgba(2, 6, 12, 0.55) 0%, rgba(2, 6, 12, 0.65) 35%, rgba(2, 6, 12, 0.78) 100%);
+  /* if still too bright, increase the opacities above by ~0.05–0.1 */
+  z-index: 0;
+}
+
+/* 3) Keep your bottom fade (you already had this) */
+.slot::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 40vh;
+  background: linear-gradient(to bottom, transparent, #03060b);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.navbar {
+  	align-self: stretch;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	justify-content: center;
+  	padding: 24px 80px 0px;
+}
+.div {
+  	align-self: stretch;
+  	height: 72px;
+  	backdrop-filter: blur(5.2px);
+  	border-radius: 40px;
+  	background: linear-gradient(115.95deg, rgba(64, 64, 64, 0.4), rgba(255, 255, 255, 0.03));
+  	overflow: hidden;
+  	flex-shrink: 0;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 0px 24px;
+  	box-sizing: border-box;
+}
+.container {
+  	width: 100%;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	padding: 0px 24px;
+  	box-sizing: border-box;
+  	max-width: 100%;
+}
+.flex {
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+  	justify-content: space-between;
+  	gap: 20px;
+}
+.trakchekBlk1Icon {
+  	width: 81px;
+  	position: relative;
+  	max-height: 100%;
+  	object-fit: cover;
+}
+.uploadTrackFlex {
+  	display: flex;
+  	align-items: center;
+  	gap: 20px;
+}
+.flex2 {
+  	display: flex;
+  	align-items: center;
+  	gap: 4px;
+}
+.button {
+  	height: 40px;
+  	border-radius: 6px;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 8px 16px;
+  	box-sizing: border-box;
+  	flex-shrink: 0;
+}
+.home {
+  	position: relative;
+  	line-height: 20px;
+  	font-weight: 500;
+}
+.uploadTrackButton {
+  	height: 40px;
+  	width: 62px;
+  	border-radius: 6px;
+  	background-color: rgba(255, 255, 255, 0);
+  	display: none;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 8px 16px;
+  	box-sizing: border-box;
+  	flex-shrink: 0;
+}
+.button4 {
+  	height: 40px;
+  	box-shadow: 0px 0px 4px #003844;
+  	border-radius: 9999px;
+  	background-color: #000;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 0px 24px;
+  	box-sizing: border-box;
+  	font-family: Manrope;
+}
+.uploadTrackContainer {
+  	align-self: stretch;
+  	flex: 1;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	padding: 80px 224px;
+  	gap: 48px;
+  	text-align: center;
+  	font-size: 48px;
+  	font-family: Montserrat;
+}
+.navbar,
+.uploadTrackContainer {
+  position: relative;
+  z-index: 1;
+}
+.header {
+  	align-self: stretch;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	gap: 20px;
+}
+.uploadYourTrack {
+  	align-self: stretch;
+  	position: relative;
+  	line-height: 100%;
+  	font-weight: 800;
+}
+.getAiPoweredFeedback {
+  	align-self: stretch;
+  	position: relative;
+  	font-size: 18px;
+  	line-height: 20px;
+  	font-family: Inter;
+  	color: #d4d4d4;
+}
+.contentWrapper {
+  	align-self: stretch;
+  	flex: 1;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	padding: 0px 96px;
+  	font-size: 16px;
+  	font-family: Poppins;
+}
+.hoverUpload {
+  	width: 800px;
+  	backdrop-filter: blur(32px);
+  	border-radius: 12px;
+  	background: linear-gradient(111.18deg, rgba(64, 64, 64, 0.3), rgba(255, 255, 255, 0.06));
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 24px;
+  	box-sizing: border-box;
+}
+.uploadTrackDiv {
+  	width: 100%;
+  	border-radius: 12px;
+  	border: 1px dashed #aeeefa;
+  	box-sizing: border-box;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 80px 0px;
+  	max-width: 100%;
+}
+.container2 {
+  	width: 100%;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	gap: 24px;
+  	max-width: 100%;
+}
+.title {
+  	align-self: stretch;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	gap: 4px;
+}
+.musicnotessimpleIcon {
+  	width: 80px;
+  	position: relative;
+  	max-height: 100%;
+  	object-fit: cover;
+}
+.dropYourTrack {
+  	align-self: stretch;
+  	height: 24px;
+  	position: relative;
+  	line-height: 24px;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	flex-shrink: 0;
+}
+.supportsWavMp3 {
+  	align-self: stretch;
+  	height: 20px;
+  	position: relative;
+  	font-size: 14px;
+  	line-height: 20px;
+  	font-family: Inter;
+  	color: #d4d4d4;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	flex-shrink: 0;
+}
+.button6 {
+  	height: 40px;
+  	border-radius: 8px;
+  	background-color: #000;
+  	border: 0.3px solid #22d3ee;
+  	box-sizing: border-box;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 0px 24px;
+  	gap: 4px;
+  	text-align: left;
+  	font-size: 14px;
+}
+.iconArrowright {
+  	height: 16px;
+  	width: 16px;
+  	position: relative;
+}

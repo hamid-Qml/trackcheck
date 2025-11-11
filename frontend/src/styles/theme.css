@@ -1,0 +1,70 @@
+/* src/styles/theme.css
+   TrakChek Design Tokens (central source of truth)
+   Use HSL where possible for smooth theming; hex kept for brand stops as requested.
+*/
+
+:root {
+  /* Core semantic tokens */
+  --background: 220 25% 6%;     /* deep navy */
+  --foreground: 210 15% 96%;    /* near-white */
+  --muted: 215 15% 16%;         /* subdued panels */
+  --muted-foreground: 215 10% 72%;
+
+  --card: 220 20% 9%;           /* glass base */
+  --card-foreground: 210 15% 96%;
+
+  --popover: 220 20% 9%;
+  --popover-foreground: 210 15% 96%;
+
+  --border: 220 14% 18%;
+  --input: 220 16% 13%;
+  --ring: 188 80% 54%;          /* cyan-ish ring (from brand) */
+
+  /* Brand (gradient) */
+  --brand-500: 188 80% 54%;     /* ~ #22D3EE in HSL */
+  --brand-700: 192 100% 20%;    /* ~ #005666 in HSL */
+  --primary: var(--brand-500);
+  --primary-foreground: 220 25% 6%;
+
+  /* Secondary/accent neutrals for tags & chips */
+  --secondary: 200 15% 58%;
+  --secondary-foreground: 220 25% 6%;
+  --accent: 188 35% 52%;
+  --accent-foreground: 220 25% 6%;
+
+  /* Status */
+  --destructive: 0 74% 58%;
+  --destructive-foreground: 210 15% 96%;
+
+  /* Sidebar */
+  --sidebar-background: 220 20% 8%;
+  --sidebar-foreground: 210 15% 96%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: 220 25% 6%;
+  --sidebar-accent: 220 14% 14%;
+  --sidebar-accent-foreground: 210 15% 96%;
+  --sidebar-border: 220 14% 18%;
+  --sidebar-ring: var(--ring);
+
+  /* Radii */
+  --radius: 1rem;
+
+  /* Brand gradients (kept as CSS vars for reuse) */
+  --gradient-brand: linear-gradient(90deg, #22D3EE 0%, #005666 100%);
+  --gradient-card: linear-gradient(180deg, hsl(220 25% 8%), hsl(220 20% 10%));
+  --gradient-page: radial-gradient(1200px 600px at 80% -200px, rgba(34,211,238,0.06) 0%, rgba(0,0,0,0) 60%);
+
+  /* Subtle shadows */
+  --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
+  --shadow-glow: 0 0 28px rgba(34,211,238,.20);
+}
+
+/* optional: dark theme hook; same as :root for now */
+:root[data-theme="dark"] {}
+
+/* Utility classes built on tokens (optional) */
+.tc-gradient-brand { background: var(--gradient-brand); }
+.tc-gradient-page { background: var(--gradient-page); }
+.tc-gradient-card { background: var(--gradient-card); }
+.tc-shadow-soft { box-shadow: var(--shadow-soft); }
+.tc-shadow-glow { box-shadow: var(--shadow-glow); }

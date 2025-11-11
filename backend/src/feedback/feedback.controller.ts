@@ -1,67 +1,82 @@
-import { Controller, Get, Param, ParseUUIDPipe, Delete, Post, Body } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+// src/feedback/feedback.controller.ts
+import {
+  Body, Controller, Get, Param, ParseUUIDPipe, Post, Headers,
+  UseGuards, UseInterceptors, UploadedFiles
+} from '@nestjs/common';
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { AuthGuard } from '@nestjs/passport';
 import { FeedbackService } from './feedback.service';
+import {
+  IngestFormDto, IngestFormUploadDto,
+  ProgressCallbackDto, FinalCallbackDto,
+} from './dto/feedback.dto';
+import { CreateFromUploadDto } from './dto/create-from-upload.dto';
+import { CurrentUser } from 'src/common/current-user.decorator';
 
-class CreateFeedbackRequestDto {
-  userId: string;
-  uploadId: string;
-  referenceUploadId?: string | null;
-  feedback_focus?: string;
-  genre?: string;
-  user_note?: string;
-}
-class CreateAiFeedbackDto {
-  uploadId: string;
-  referenceUploadId?: string | null;
-  mix_quality_score?: number;
-  arrangement_score?: number;
-  creativity_score?: number;
-  suggestions_score?: number;
-  mix_quality_text?: string;
-  arrangement_text?: string;
-  creativity_text?: string;
-  suggestions_text?: string;
-  recommendations?: any;
-  reference_track_summary?: string | null;
-  raw_response?: string | null;
-  model?: string;
-}
-
-@ApiTags('requests')
+@ApiTags('feedback')
 @Controller('feedback')
 export class FeedbackController {
   constructor(private readonly feedback: FeedbackService) {}
 
-  // Feedback Requests (jobs)
-  @Get('requests')
-  findAllRequests() {
-    return this.feedback.findAllRequests();
+  // keep ingest for power users / internal tools
+  @Post('ingest')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: IngestFormUploadDto })
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'audio_file', maxCount: 1 },
+    { name: 'reference_audio_file', maxCount: 1 },
+  ]))
+  ingestAndStart(
+    @Body() dto: IngestFormDto,
+    @UploadedFiles() files: { audio_file?: Express.Multer.File[]; reference_audio_file?: Express.Multer.File[]; },
+    @CurrentUser() user: { userId: string },
+  ) {
+    // optional: verify dto.userId === user.userId if you keep dto.userId
+    const main = files?.audio_file?.[0];
+    const ref = files?.reference_audio_file?.[0];
+    return this.feedback.ingestAndStart(dto, main, ref);
   }
 
+  // STEP 2: create+trigger from upload ids
   @Post('requests')
-  createRequest(@Body() dto: CreateFeedbackRequestDto) {
-    return this.feedback.createRequest(dto);
+  @UseGuards(AuthGuard('jwt'))
+  createFromUpload(
+    @Body() dto: CreateFromUploadDto,
+    @CurrentUser() user: { userId: string }
+  ) {
+    return this.feedback.createFromUploadIdsAndTrigger(user.userId, dto);
   }
 
-  // AI Feedback (outputs)
-  @ApiTags('feedback')
-  @Get('ai')
-  findAllAi() {
-    return this.feedback.findAllAi();
+  @Get('requests')
+  @UseGuards(AuthGuard('jwt'))
+  findAllRequests(@CurrentUser() user: { userId: string }) {
+    return this.feedback.findAllRequestsForUser(user.userId);
   }
 
-  @Get('ai/:id')
-  findOneAi(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.feedback.findOneAi(id);
+  @Get('requests/:id/status')
+  @UseGuards(AuthGuard('jwt'))
+  getStatus(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: { userId: string }) {
+    return this.feedback.getStatusOwned(id, user.userId);
   }
 
-  @Post('ai')
-  createAi(@Body() dto: CreateAiFeedbackDto) {
-    return this.feedback.createAi(dto);
+  // callbacks (no auth guard; protected by header secret)
+  @Post('progress/:requestId')
+  progressCallback(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Body() dto: ProgressCallbackDto,
+    @Headers('x-ml-secret') mlSecret?: string,
+  ) {
+    return this.feedback.handleProgressCallback(requestId, dto, mlSecret);
   }
 
-  @Delete('ai/:id')
-  removeAi(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.feedback.removeAi(id);
+  @Post('callback/:requestId')
+  finalCallback(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Body() dto: FinalCallbackDto,
+    @Headers('x-ml-secret') mlSecret?: string,
+  ) {
+    return this.feedback.handleFinalCallback(requestId, dto, mlSecret);
   }
 }

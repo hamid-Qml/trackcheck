@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -13,13 +14,25 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   // Security middleware
-  app.use(helmet());
+  app.use(helmet({
+    crossOriginResourcePolicy: false, // allow swagger assets
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false, // disable CSP in dev for Swagger
+  }));
 
   // CORS configuration
+  const raw = configService.get<string>('CORS_ORIGINS') ?? configService.get<string>('APP_BASE_URL');
+  const origins = raw ? raw.split(',').map(s => s.trim()) : [];
   app.enableCors({
-    origin: configService.get('FRONTEND_URL') || '*',
+    origin: (origin, callback) => {
+      // allow non-browser tools with no Origin header (curl/Postman)
+      if (!origin) return callback(null, true);
+      return callback(null, origins.includes(origin));
+    },
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
+
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -28,6 +41,8 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      validationError: { target: false, value: false }, // cleaner error payloads
+      forbidUnknownValues: true, // guards against weird payloads
     }),
   );
 

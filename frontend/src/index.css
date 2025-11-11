@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Funky Audio Analysis Platform Design System
+All colors MUST be HSL for perfect theme consistency.
+*/
+
+@layer base {
+  :root {
+    /* Dark cosmic background with refined neon accents */
+    --background: 230 35% 7%;
+    --foreground: 280 40% 95%;
+
+    /* Cards with subtle glass morphism */
+    --card: 230 25% 12%;
+    --card-foreground: 280 40% 95%;
+
+    --popover: 230 25% 12%;
+    --popover-foreground: 280 40% 95%;
+
+    /* Refined purple primary - less intense */
+    --primary: 280 60% 65%;
+    --primary-foreground: 230 35% 7%;
+
+    /* Sophisticated teal secondary instead of shocking pink */
+    --secondary: 180 55% 60%;
+    --secondary-foreground: 230 35% 7%;
+
+    /* Muted dark elements */
+    --muted: 230 25% 18%;
+    --muted-foreground: 240 15% 70%;
+
+    /* Soft blue accent */
+    --accent: 200 55% 65%;
+    --accent-foreground: 230 35% 7%;
+
+    /* Warning red - toned down */
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 280 40% 95%;
+
+    /* Borders and inputs */
+    --border: 230 25% 25%;
+    --input: 230 25% 15%;
+    --ring: 280 60% 65%;
+
+    --radius: 1rem;
+
+    /* Refined gradients - less intense */
+    --gradient-cosmic: linear-gradient(135deg, hsl(280 60% 65%), hsl(180 55% 60%), hsl(200 55% 65%));
+    --gradient-neon: linear-gradient(90deg, hsl(280 60% 65%), hsl(180 55% 60%));
+    --gradient-wave: linear-gradient(180deg, hsl(230 35% 7%), hsl(230 25% 12%));
+    
+    /* Softer audio waveform shadows */
+    --shadow-neon: 0 0 25px hsl(280 60% 65% / 0.4);
+    --shadow-pulse: 0 0 35px hsl(180 55% 60% / 0.3);
+    --shadow-glow: 0 10px 30px hsl(200 55% 65% / 0.2);
+
+    /* Sidebar for audio controls */
+    --sidebar-background: 230 25% 10%;
+    --sidebar-foreground: 280 40% 95%;
+    --sidebar-primary: 280 60% 65%;
+    --sidebar-primary-foreground: 230 35% 7%;
+    --sidebar-accent: 230 25% 15%;
+    --sidebar-accent-foreground: 280 40% 95%;
+    --sidebar-border: 230 25% 20%;
+    --sidebar-ring: 280 60% 65%;
+  }
+
+  /* Our design is naturally dark - no separate dark mode needed for this funky platform */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: var(--gradient-wave);
+    min-height: 100vh;
+  }
+
+  /* Funky audio-themed animations */
+  @keyframes pulse-neon {
+    0%, 100% { box-shadow: 0 0 20px hsl(280 60% 65% / 0.3); }
+    50% { box-shadow: 0 0 30px hsl(180 55% 60% / 0.4); }
+  }
+
+  @keyframes wave-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(1deg); }
+  }
+
+  @keyframes glow-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}
+
+@layer components {
+  /* Audio waveform decorative elements */
+  .wave-pattern {
+    background: linear-gradient(90deg, 
+      hsl(280 60% 65% / 0.08) 0%, 
+      hsl(180 55% 60% / 0.15) 25%,
+      hsl(200 55% 65% / 0.12) 50%,
+      hsl(180 55% 60% / 0.15) 75%,
+      hsl(280 60% 65% / 0.08) 100%
+    );
+  }
+
+  .neon-glow {
+    animation: pulse-neon 2s ease-in-out infinite;
+  }
+
+  .floating-element {
+    animation: wave-float 3s ease-in-out infinite;
+  }
+
+  .hero-text {
+    background: var(--gradient-cosmic);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

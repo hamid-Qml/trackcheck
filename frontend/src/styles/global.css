@@ -1,0 +1,88 @@
+/* @import "./theme.css"; */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:ital,wght@0,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400&display=swap');
+
+/* make the app canvas truly full-bleed */
+:root,
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html, body {
+  margin: 0;                /* kill default body margin */
+  background: #000;         /* matches your page background */
+}
+
+body {
+  overflow-x: hidden;       /* guard against 100vw overflows */
+}
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    background: hsl(var(--background));
+    /* add page halo */
+    background-image: var(--gradient-page);
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+}
+
+@layer components {
+  .tc-card {
+    @apply bg-card text-card-foreground rounded-lg border border-border;
+    background-image: var(--gradient-card);
+    box-shadow: var(--shadow-soft);
+  }
+  .tc-pill {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs border;
+    @apply bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border;
+  }
+  .tc-btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 font-medium transition;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+  .tc-btn--primary {
+    @apply text-primary-foreground;
+    background: var(--gradient-brand);
+    box-shadow: var(--shadow-glow);
+  }
+  .tc-btn--ghost {
+    @apply bg-transparent text-foreground hover:bg-muted;
+  }
+}
+
+/* --- Upload page helpers  --- */
+.upload-hero {
+  /* brand halo from tokens + your image */
+  background-image:
+    radial-gradient(1200px 600px at 80% -200px, rgba(34,211,238,0.06) 0%, rgba(0,0,0,0) 60%),
+    url('/src/assets/track-upload-bg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.glass-nav {
+  background: color-mix(in oklab, hsl(var(--card)) 70%, transparent);
+  border: 1px solid hsl(var(--border) / 0.6);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+}
+
+.dashed {
+  border-style: dashed;
+  border-color: hsl(var(--border) / .8);
+}
+

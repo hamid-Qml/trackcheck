@@ -7,7 +7,8 @@ load_dotenv()
 
 class Settings(BaseModel):
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
+    MODEL_NAME: str = os.getenv("MODEL_NAME","")
+    ML_CALLBACK_SECRET: str = os.getenv("ML_CALLBACK_SECRET","" )
 
     # Upload limits
     MAX_FILE_MB: int = int(os.getenv("MAX_FILE_MB", "100"))

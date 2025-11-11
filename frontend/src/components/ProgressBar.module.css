@@ -1,0 +1,27 @@
+/* ProgressBar.module.css */
+.aspectRatio {
+  position: relative;
+  width: 100%;
+  height: 4px;                 /* make it a slim bar */
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08); /* track color */
+}
+
+.aspectRatioKeeperRotated {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;                  /* size of the moving chunk */
+  left: -40%;                  /* start off screen */
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22d3ee, #aeeefa);
+  animation: indeterminate 1.2s ease-in-out infinite;
+}
+
+/* keyframes for the sweeping effect */
+@keyframes indeterminate {
+  0%   { left: -40%; }
+  50%  { left: 30%;  width: 50%; }
+  100% { left: 100%; width: 40%; }
+}

@@ -8,10 +8,18 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { AudioModule } from './audio/audio.module';
 import { FeedbackModule } from './feedback/feedback.module';
 
+import { configValidationSchema } from './config/config.validation';
+import authConfig from './config/auth.config';
+import mailConfig from './config/mail.config';
+
 @Module({
   imports: [
     // 🌍 Environment variables
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      expandVariables: true,
+      validationSchema:configValidationSchema 
+    }),
 
     // 🗄️ Database connection (URL-based, migrations-first)
     TypeOrmModule.forRoot({

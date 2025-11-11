@@ -1,29 +1,42 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+// src/auth/auth.controller.ts
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-
-class SignUpDto {
-  email: string;
-  password: string;
-}
-class LoginDto {
-  email: string;
-  password: string;
-}
+import { SignUpDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { Req } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private auth: AuthService) {}
 
   @Post('signup')
-  async signup(@Body() dto: SignUpDto) {
-    return this.authService.signup(dto);
+  signup(@Body() dto: SignUpDto) {
+    return this.auth.signup(dto);
   }
 
-  @HttpCode(200)
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto) {
+    return this.auth.login(dto);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  me(@Req() req: any) {
+    return this.auth.me(req.user);
+  }
+
+  @Post('forgot-password')
+  forgot(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  reset(@Body() dto: ResetPasswordDto, @Query('email') email: string) {
+    return this.auth.resetPassword(dto, email);
   }
 }
