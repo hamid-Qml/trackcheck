@@ -17,7 +17,7 @@ import { CurrentUser } from 'src/common/current-user.decorator';
 @ApiTags('feedback')
 @Controller('feedback')
 export class FeedbackController {
-  constructor(private readonly feedback: FeedbackService) {}
+  constructor(private readonly feedback: FeedbackService) { }
 
   // keep ingest for power users / internal tools
   @Post('ingest')
@@ -37,6 +37,15 @@ export class FeedbackController {
     const main = files?.audio_file?.[0];
     const ref = files?.reference_audio_file?.[0];
     return this.feedback.ingestAndStart(dto, main, ref);
+  }
+
+  @Get('requests/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async getRequestBundle(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.feedback.findOneDetailedOwned(id, user.userId);
   }
 
   // STEP 2: create+trigger from upload ids
@@ -60,6 +69,8 @@ export class FeedbackController {
   getStatus(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: { userId: string }) {
     return this.feedback.getStatusOwned(id, user.userId);
   }
+
+
 
   // callbacks (no auth guard; protected by header secret)
   @Post('progress/:requestId')

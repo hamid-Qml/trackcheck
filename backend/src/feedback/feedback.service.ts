@@ -379,4 +379,191 @@ export class FeedbackService {
             progress: savedReq.progress,
         };
     }
+
+    /** Compute an overall score from available section scores */
+    private computeOverallScore(ai?: AiFeedback | null): number | null {
+        if (!ai) return null;
+        const parts = [
+            ai.mix_quality_score,
+            ai.arrangement_score,
+            ai.creativity_score,
+            ai.suggestions_score,
+        ].filter((x) => typeof x === 'number') as number[];
+        if (!parts.length) return null;
+        const avg = parts.reduce((a, b) => a + b, 0) / parts.length;
+        return Math.round(avg * 10) / 10; // 1 decimal
+    }
+
+    /**
+     * Return everything about a feedback request owned by `userId`:
+     * - FeedbackRequest (+ upload & reference_upload)
+     * - AudioFeatures for main & reference (if exist)
+     * - AiFeedback for the main upload (unique)
+     * - A small "computed" section (overall_score)
+     */
+    async findOneDetailedOwned(id: string, userId: string) {
+        const req = await this.requests.findOne({
+            where: { id },
+            relations: ['user', 'upload', 'reference_upload'],
+        });
+        if (!req) throw new NotFoundException('Request not found');
+        if (req.user.id !== userId) throw new ForbiddenException();
+
+        const [mainFeat, refFeat, ai] = await Promise.all([
+            this.features.findOne({
+                where: { upload: { id: req.upload.id } as any },
+                relations: ['upload'],
+            }).catch(() => null),
+
+            req.reference_upload
+                ? this.features.findOne({
+                    where: { upload: { id: req.reference_upload.id } as any },
+                    relations: ['upload'],
+                }).catch(() => null)
+                : Promise.resolve(null),
+
+            this.ai.findOne({
+                where: { upload: { id: req.upload.id } as any },
+                relations: ['upload', 'reference_upload'],
+            }).catch(() => null),
+        ]);
+
+        const overall_score = this.computeOverallScore(ai || null);
+
+        // Build a clean, FE-friendly payload (avoid circular refs / hidden fields)
+        const upload = req.upload
+            ? {
+                id: req.upload.id,
+                filename: req.upload.filename,
+                file_path: req.upload.file_path,
+                duration: req.upload.duration,
+                size_mb: req.upload.size_mb,
+                genre: req.upload.genre,
+                feedback_focus: req.upload.feedback_focus,
+                status: req.upload.status,
+                created_at: req.upload.created_at,
+            }
+            : null;
+
+        const reference_upload = req.reference_upload
+            ? {
+                id: req.reference_upload.id,
+                filename: req.reference_upload.filename,
+                file_path: req.reference_upload.file_path,
+                duration: req.reference_upload.duration,
+                size_mb: req.reference_upload.size_mb,
+                genre: req.reference_upload.genre,
+                feedback_focus: req.reference_upload.feedback_focus,
+                status: req.reference_upload.status,
+                created_at: req.reference_upload.created_at,
+            }
+            : null;
+
+        const ai_feedback = ai
+            ? {
+                id: ai.id,
+                upload_id: ai.upload?.id,
+                reference_upload_id: ai.reference_upload?.id ?? null,
+
+                mix_quality_score: ai.mix_quality_score,
+                arrangement_score: ai.arrangement_score,
+                creativity_score: ai.creativity_score,
+                suggestions_score: ai.suggestions_score,
+
+                mix_quality_text: ai.mix_quality_text,
+                arrangement_text: ai.arrangement_text,
+                creativity_text: ai.creativity_text,
+                suggestions_text: ai.suggestions_text,
+
+                recommendations: ai.recommendations,
+                reference_comparison_json: ai.reference_comparison_json,
+                reference_track_summary: ai.reference_track_summary,
+
+                model: ai.model,
+                llm_usage: ai.llm_usage,
+                prompt_version: ai.prompt_version,
+                raw_response: ai.raw_response,
+
+                status: ai.status,
+                error_message: ai.error_message,
+                created_at: ai.created_at,
+                updated_at: ai.updated_at,
+            }
+            : null;
+
+        const features = {
+            main: mainFeat
+                ? {
+                    id: mainFeat.id,
+                    upload_id: mainFeat.upload?.id,
+                    tempo: mainFeat.tempo,
+                    key: mainFeat.key,
+                    duration: mainFeat.duration,
+                    peak_rms: mainFeat.peak_rms,
+                    spectral_centroid: mainFeat.spectral_centroid,
+                    spectral_rolloff: mainFeat.spectral_rolloff,
+                    bandwidth: mainFeat.bandwidth,
+                    flatness: mainFeat.flatness,
+                    energy_profile: mainFeat.energy_profile,
+                    transients_info: mainFeat.transients_info,
+                    silence_segments: mainFeat.silence_segments,
+                    vocal_timestamps: mainFeat.vocal_timestamps,
+                    vocal_intensity: mainFeat.vocal_intensity,
+                    drop_timestamps: mainFeat.drop_timestamps,
+                    structure: mainFeat.structure,
+                    structure_segments: mainFeat.structure_segments,
+                    fx_and_transitions: mainFeat.fx_and_transitions,
+                    summary_snapshot: mainFeat.summary_snapshot,
+                    is_reference: mainFeat.is_reference,
+                    extracted_at: mainFeat.extracted_at,
+                }
+                : null,
+            reference: refFeat
+                ? {
+                    id: refFeat.id,
+                    upload_id: refFeat.upload?.id,
+                    tempo: refFeat.tempo,
+                    key: refFeat.key,
+                    duration: refFeat.duration,
+                    peak_rms: refFeat.peak_rms,
+                    spectral_centroid: refFeat.spectral_centroid,
+                    spectral_rolloff: refFeat.spectral_rolloff,
+                    bandwidth: refFeat.bandwidth,
+                    flatness: refFeat.flatness,
+                    energy_profile: refFeat.energy_profile,
+                    transients_info: refFeat.transients_info,
+                    silence_segments: refFeat.silence_segments,
+                    vocal_timestamps: refFeat.vocal_timestamps,
+                    vocal_intensity: refFeat.vocal_intensity,
+                    drop_timestamps: refFeat.drop_timestamps,
+                    structure: refFeat.structure,
+                    structure_segments: refFeat.structure_segments,
+                    fx_and_transitions: refFeat.fx_and_transitions,
+                    summary_snapshot: refFeat.summary_snapshot,
+                    is_reference: refFeat.is_reference,
+                    extracted_at: refFeat.extracted_at,
+                }
+                : null,
+        };
+
+        return {
+            id: req.id,
+            status: req.status,
+            error_message: req.error_message ?? null,
+            created_at: req.created_at,
+            updated_at: req.updated_at,
+            progress: req.progress || { percent: 0, stage: 'pending' },
+            selections: {
+                feedback_focus: req.feedback_focus,
+                genre: req.genre,
+                user_note: req.user_note,
+            },
+            upload,
+            reference_upload,
+            features,
+            ai_feedback,
+            computed: { overall_score },
+        };
+    }
+
 }
