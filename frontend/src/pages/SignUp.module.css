@@ -1,16 +1,16 @@
 /* ----------- Layout Shell ----------- */
 .signUp {
   width: 100%;
-  min-height: 100%;           /* inherits from #root 100% */
+  min-height: 100%;
   background: #000;
-  display: grid;              /* no centering – we want full bleed */
+  display: grid;
   place-items: stretch;
   color: #fafafa;
   font-family: "Inter", "Poppins", "Montserrat", sans-serif;
 }
 
 .frame {
-  width: 100%;                /* IMPORTANT: avoid 100vw */
+  width: 100%;
   min-height: 100%;
   margin: 0;
   padding: 0;
@@ -20,8 +20,8 @@
 /* Two-column container */
 .container {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* left fixed, right fills */
-  min-height: 100%;                 /* stretch the full page height */
+  grid-template-columns: 1fr 1fr;
+  min-height: 100%;
   background: #050607;
 }
 
@@ -34,14 +34,18 @@
 }
 
 .logoRow { margin-bottom: 40px; }
+
 .trakchekBlk1Icon {
-  width: 72px;
+  width: 100px;                 /* bigger like Figma */
   height: auto;
   object-fit: contain;
-  opacity: 0.9;
+  opacity: 0.95;
+}
+@media (max-width: 900px) {
+  .trakchekBlk1Icon { width: 80px; }
 }
 
-/* Card container (the gray box around form) */
+/* Card container */
 .formCard {
   background: #050505;
   border: 1px solid #1a1a1a;
@@ -52,13 +56,25 @@
   flex-direction: column;
   gap: 28px;
   width: 100%;
-  max-width: 520px;           /* matches the tight, “contained” Figma look */
+  max-width: 520px;
 }
 
 /* headings */
 .cardHeader { display: grid; gap: 8px; }
 .createAnAccount { font: 700 20px/28px Montserrat, sans-serif; }
 .letsGetStarted  { font: 14px/20px Inter, sans-serif; color: #bdbdbd; }
+
+/* Inline error */
+.inlineError {
+  border: 1px solid #7f1d1d;
+  background: rgba(239,68,68,0.08);
+  color: #fecaca;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 18px;
+}
 
 /* FORM */
 .form { display: grid; gap: 20px; }
@@ -79,13 +95,31 @@
 }
 .input input {
   width: 100%;
-  background: transparent;
-  color: #fafafa;
+  background: transparent !important;
+  color: #fafafa !important;       /* always white text */
   border: 0;
   outline: 0;
   font-size: 14px;
+  caret-color: #fafafa;
 }
 .input input::placeholder { color: #565656; }
+
+/* kill Chrome autofill yellow/highlighter */
+.input input:-webkit-autofill,
+.input input:-webkit-autofill:hover,
+.input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fafafa;
+  transition: background-color 9999s ease-out 0s;  /* hide paint */
+  box-shadow: 0 0 0px 1000px #0c0c0c inset;        /* keep dark bg */
+}
+
+/* selection color inside inputs */
+.input input::selection {
+  background: rgba(34,211,238,0.25);
+  color: #fff;
+}
+
+.fieldError { color: #fca5a5; font-size: 12px; }
 
 /* Checkbox + terms */
 .checkboxRow {
@@ -111,27 +145,48 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: box-shadow .2s ease;
+  transition: box-shadow .2s ease, opacity .15s ease;
   box-shadow: 0 0 6px rgba(34,211,238,.25);
 }
 .cta:hover { box-shadow: 0 0 12px rgba(34,211,238,.4); }
-
-.footerNote { margin-top: 4px; font-size: 13px; text-align: center; color: #bdbdbd; }
-.footerNote .link { margin-left: 4px; }
+.cta:disabled { opacity: .6; cursor: not-allowed; }
 
 /* RIGHT (image panel) */
 .rightPane {
   position: relative;
   width: 100%;
   height: 100%;
+  padding: 0 32px 32px;                     /* margin/space around edges like Figma */
+  background: #000;                  /* blends with page */
+  display:flex
+}
+.rightBox {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;               /* rounded container like the shot */
+  overflow: hidden;
   background-image: var(--panel-bg);
   background-repeat: no-repeat;
-  
-  background-size: 100%;       /* fit HEIGHT, keep aspect ratio */
-  /* optional: if you ever see a gap on the left on ultra-wide screens: */
-  background-color: #000;           /* blends with page bg */
+  background-size: cover;            /* fill and crop gracefully */
+  background-position: top center;
+  box-shadow: inset 0 0 0 1px #0f0f0f;
 }
 
+/* Simple toast (top-right) */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #dc2626;
+  color: #fecaca;
+  background: rgba(82,82,82,0.16);
+  backdrop-filter: blur(30px);
+  animation: fadeIn .15s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
-/* If a thin black line ever appears at extreme widths, overfill slightly: */
-/* .rightPane { background-size: 110% auto; } */
+.footerNote { margin-top: 4px; font-size: 13px; text-align: center; color: #bdbdbd; }
+.footerNote .link { margin-left: 4px; }

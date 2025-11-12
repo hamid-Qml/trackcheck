@@ -41,92 +41,10 @@ export class FeedbackService {
         this.ML_URL = this.config.get<string>('MLEND_URL', 'http://localhost:5000');
         this.ML_SECRET = this.config.get<string>('ML_CALLBACK_SECRET', '');
         this.PUBLIC_APP_URL = this.config.get<string>('PUBLIC_APP_URL', 'http://localhost:8000');
-        this.UPLOADS_DIR = this.config.get<string>('UPLOADS_DIR', path.resolve(process.cwd(), '/data/uploads'));
+        this.UPLOADS_DIR = this.config.get<string>('UPLOADS_DIR', path.resolve(process.cwd(), './uploads'));
         if (!fs.existsSync(this.UPLOADS_DIR)) fs.mkdirSync(this.UPLOADS_DIR, { recursive: true });
     }
 
-    // ------------------------------
-    // Single front-door flow
-    // ------------------------------
-    async ingestAndStart(
-        dto: IngestFormDto,
-        mainFile?: Express.Multer.File,
-        refFile?: Express.Multer.File,
-    ) {
-        if (!mainFile) throw new BadRequestException('audio_file is required');
-        const user = await this.users.findOne({ where: { id: dto.userId } });
-        if (!user) throw new NotFoundException('User not found');
-
-        // 1) persist files to disk
-        const mainPath = await this.saveToUploadsDir(mainFile);
-        const refPath = refFile ? await this.saveToUploadsDir(refFile) : null;
-
-        // 2) create AudioUpload rows
-        const mainUpload = this.uploads.create({
-            user,
-            file_path: mainPath,
-            filename: path.basename(mainPath),
-            duration: undefined,
-            size_mb: mainFile.size ? +(mainFile.size / (1024 * 1024)).toFixed(3) : null,
-            genre: dto.genre,
-            feedback_focus: dto.feedback_focus,
-            status: 'uploaded',
-        } as Partial<AudioUpload>);
-        const savedMain = await this.uploads.save(mainUpload);
-
-        let savedRef: AudioUpload | null = null;
-        if (refPath) {
-            const refUpload = this.uploads.create({
-                user,
-                file_path: refPath,
-                filename: path.basename(refPath),
-                duration: undefined,
-                size_mb: refFile!.size ? +(refFile!.size / (1024 * 1024)).toFixed(3) : null,
-                genre: dto.genre,
-                feedback_focus: dto.feedback_focus,
-                status: 'uploaded',
-            } as Partial<AudioUpload>);
-            savedRef = await this.uploads.save(refUpload);
-        }
-
-        // 3) create FeedbackRequest
-        const req = this.requests.create({
-            user,
-            upload: savedMain,
-            reference_upload: savedRef ?? null,
-            status: 'pending',
-            feedback_focus: dto.feedback_focus ?? null,
-            genre: dto.genre ?? null,
-            user_note: dto.user_note ?? null,
-            progress: { percent: 0, stage: 'pending', status: 'processing' },
-        } as Partial<FeedbackRequest>);
-        const savedReq = await this.requests.save(req);
-
-        // 4) trigger MLint
-        await this.postToMl(savedReq).catch(async (e) => {
-            this.logger.error(`ML trigger failed: ${e?.message || e}`);
-            savedReq.status = 'failed';
-            savedReq.error_message = 'Failed to trigger ML pipeline';
-            savedReq.progress = { percent: 0, stage: 'failed', status: 'failed' };
-            await this.requests.save(savedReq);
-        });
-
-        return {
-            requestId: savedReq.id,
-            uploadId: savedMain.id,
-            referenceUploadId: savedRef?.id ?? null,
-            status: savedReq.status,
-            progress: savedReq.progress,
-        };
-    }
-
-    private async saveToUploadsDir(file: Express.Multer.File) {
-        const ext = path.extname(file.originalname || '') || '.bin';
-        const name = `${Date.now()}_${randomBytes(6).toString('hex')}${ext}`;
-        const dest = path.join(this.UPLOADS_DIR, name);
-        await fs.promises.writeFile(dest, file.buffer);
-        return dest;
-    }
 
     // ------------------------------
     // (existing) listing + status + ML trigger + callbacks
@@ -448,12 +366,9 @@ export class FeedbackService {
         const upload = req.upload
             ? {
                 id: req.upload.id,
-                filename: req.upload.filename,
+                filename: req.upload.original_file_name,
                 file_path: req.upload.file_path,
-                duration: req.upload.duration,
                 size_mb: req.upload.size_mb,
-                genre: req.upload.genre,
-                feedback_focus: req.upload.feedback_focus,
                 status: req.upload.status,
                 created_at: req.upload.created_at,
             }
@@ -462,12 +377,9 @@ export class FeedbackService {
         const reference_upload = req.reference_upload
             ? {
                 id: req.reference_upload.id,
-                filename: req.reference_upload.filename,
+                filename: req.reference_upload.original_file_name,
                 file_path: req.reference_upload.file_path,
-                duration: req.reference_upload.duration,
                 size_mb: req.reference_upload.size_mb,
-                genre: req.reference_upload.genre,
-                feedback_focus: req.reference_upload.feedback_focus,
                 status: req.reference_upload.status,
                 created_at: req.reference_upload.created_at,
             }

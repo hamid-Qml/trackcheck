@@ -7,7 +7,6 @@ import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { AudioService } from './audio.service';
-import { UpdateUploadDto } from './dto/audio.dto';
 import { CurrentUser } from 'src/common/current-user.decorator';
 
 @ApiTags('uploads')
@@ -50,10 +49,9 @@ export class AudioController {
   @Patch('uploads/:id')
   updateUpload(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUploadDto,
     @CurrentUser() user: { userId: string }
   ) {
-    return this.audio.updateUploadOwned(id, user.userId, dto);
+    return this.audio.updateUploadOwned(id, user.userId);
   }
 
   @Delete('uploads/:id')

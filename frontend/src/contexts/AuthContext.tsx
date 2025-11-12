@@ -126,17 +126,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (email: string, password: string) => {
     setStatus("loading");
-    const { user: me } = await authService.login(email, password);
-    setAuthed(me ?? null, getToken());
-    setStatus("authenticated");
-    // no manual broadcast — storage event fires from setToken()
+    try {
+      const { user: me } = await authService.login(email, password);
+      setAuthed(me ?? null, getToken());
+      setStatus("authenticated");
+    } catch (e: any) {
+      setStatus("unauthenticated");  // <-- important
+      throw (e instanceof Error ? e : new Error(e?.message || "Login failed"));
+    }
   }, []);
 
   const signup = useCallback(async (payload: { email: string; password: string; full_name?: string }) => {
     setStatus("loading");
-    const { user: me } = await authService.signup(payload);
-    setAuthed(me ?? null, getToken());
-    setStatus("authenticated");
+    try {
+      const { user: me } = await authService.signup(payload);
+      setAuthed(me ?? null, getToken());
+      setStatus("authenticated");
+    } catch (e: any) {
+      setStatus("unauthenticated");  // <-- important
+      throw (e instanceof Error ? e : new Error(e?.message || "Sign up failed"));
+    }
   }, []);
 
   const refreshMe = useCallback(async () => {

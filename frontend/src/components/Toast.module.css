@@ -1,66 +1,90 @@
 .toast {
-  	height: auto;
-  	width: auto;
-  	position: fixed;
-  	backdrop-filter: blur(30px);
-  	border-radius: 8px;
-  	background: linear-gradient(90.11deg, rgba(82, 82, 82, 0.16), rgba(64, 64, 64, 0.16));
-  	border: 0.3px solid #dc2626;
-    padding: 12px 16px;
-    margin-top: 40px;
-    pointer-events: auto;
-  	box-sizing: border-box;
-  	display: flex;
-  	align-items: center;
-  	justify-content: center;
-  	text-align: left;
-  	font-size: 14px;
-  	color: #ef4444;
-  	font-family: Poppins;
-    z-index: 10000;
+  position: fixed;
+  z-index: 10000;
+  pointer-events: auto;
+  height: auto;
+  width: auto;
+  box-sizing: border-box;
+
+  backdrop-filter: blur(30px);
+  border-radius: 8px;
+  background: linear-gradient(90.11deg, rgba(82, 82, 82, 0.16), rgba(64, 64, 64, 0.16));
+  border: 0.3px solid #dc2626;
+  padding: 12px 16px;
+  color: #ef4444;
+  font-size: 14px;
+  font-family: Poppins, system-ui, -apple-system, sans-serif;
 }
+
+/* corners */
+.top-right    { top: 24px;  right: 24px; }
+.top-left     { top: 24px;  left: 24px; }
+.top-center {
+  top: 50px;            
+  transform: translateX(-50%);
+}
+.bottom-right { bottom: 24px; right: 24px; }
+.bottom-left  { bottom: 24px; left: 24px; }
+
+/* enter/exit animations */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastOutUp {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-10px); }
+}
+
+.enter { animation: toastIn 180ms ease-out forwards; }
+.exit  { animation: toastOutUp 180ms ease-in forwards; }
 
 .contentWrapper {
-  	display: flex;
-  	align-items: center;
-  	gap: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 .toasttext {
-  	width: 256px;
-  	display: flex;
-  	flex-direction: column;
-  	align-items: flex-start;
-  	gap: 4px;
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .unsupportedFileFormat {
-  	align-self: stretch;
-  	position: relative;
-  	line-height: 20px;
-  	font-weight: 600;
+  line-height: 20px;
+  font-weight: 600;
 }
 .pleaseUploadA {
-  	align-self: stretch;
-  	position: relative;
-  	line-height: 20px;
-  	font-family: Inter;
-  	color: #fafafa;
-  	opacity: 0.9;
-}
-.button {
-  	height: 40px;
-  	border-radius: 6px;
-  	background-color: #000;
-  	border: 1px solid #404040;
-  	box-sizing: border-box;
-  	display: flex;
-  	align-items: center;
-  	justify-content: center;
-  	padding: 8px 16px;
-  	color: #fafafa;
-}
-.toastButton {
-  	position: relative;
-  	line-height: 20px;
-  	font-weight: 500;
+  line-height: 20px;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  color: #fafafa;
+  opacity: 0.9;
 }
 
+.button {
+  height: 40px;
+  border-radius: 6px;
+  background-color: #000;
+  border: 1px solid #404040;
+  padding: 8px 16px;
+  color: #fafafa;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.toastButton { line-height: 20px; font-weight: 500; }
+
+/* Optional progress bar (fills left → right over duration) */
+.timer {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: #ef4444;
+  transform-origin: left;
+  animation: grow linear forwards;
+  opacity: .75;
+}
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}

@@ -1,21 +1,28 @@
 import { FunctionComponent } from "react";
 import styles from "./ProgressBar.module.css";
 
-/**
- * Indeterminate progress bar for "uploading..."
- */
-const ProgressBar: FunctionComponent<{ visible?: boolean }> = ({ visible = false }) => {
+type Props = {
+  visible?: boolean;
+  state?: "indeterminate" | "success"; // success = quick fill to 100%
+};
+
+const ProgressBar: FunctionComponent<Props> = ({ visible = false, state = "indeterminate" }) => {
   if (!visible) return null;
+
   return (
-   <div
-    className={styles.aspectRatio}
-    role="progressbar"
-    aria-label="Uploading"
-    aria-busy="true"
-    aria-live="polite"
-  >
-    <div className={styles.aspectRatioKeeperRotated} />
-  </div>
+    <div
+      className={styles.track}
+      role="progressbar"
+      aria-label="Uploading"
+      aria-busy={state !== "success"}
+      aria-live="polite"
+    >
+      {state === "indeterminate" ? (
+        <div className={styles.sweep} />
+      ) : (
+        <div className={styles.fill} />
+      )}
+    </div>
   );
 };
 

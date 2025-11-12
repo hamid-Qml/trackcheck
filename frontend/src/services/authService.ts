@@ -72,7 +72,6 @@ export const authService = {
   async meWithToken(token: string): Promise<User> {
     return api<User>('/auth/me', { method: 'GET', headers: { Authorization: `Bearer ${token}` } });
   },
-
   // ------------------------
   // Password flows
   // ------------------------
@@ -85,10 +84,9 @@ export const authService = {
   },
 
   async resetPassword(args: { email: string; token: string; new_password: string }) {
-    // POST /auth/reset-password?email=...
-    return api<{ ok: true }>(`/auth/reset-password?email=${encodeURIComponent(args.email)}`, {
-      method: 'POST',
-      body: { token: args.token, new_password: args.new_password },
-    });
-  },
+    return api<{ ok: true }>(
+      `/auth/reset-password?email=${encodeURIComponent(args.email)}`,
+      { method: 'POST', body: { token: args.token, new_password: args.new_password } }
+    );
+  }
 };

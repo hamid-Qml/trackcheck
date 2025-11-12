@@ -1,27 +1,43 @@
-/* ProgressBar.module.css */
-.aspectRatio {
+.track {
   position: relative;
   width: 100%;
-  height: 4px;                 /* make it a slim bar */
+  height: 6px;
   border-radius: 9999px;
   overflow: hidden;
-  background: rgba(255,255,255,0.08); /* track color */
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0.5px rgba(255,255,255,0.04);
 }
 
-.aspectRatioKeeperRotated {
+/* Indeterminate sweeping chunk */
+.sweep {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 40%;                  /* size of the moving chunk */
-  left: -40%;                  /* start off screen */
+  width: 38%;
+  left: -40%;
   border-radius: inherit;
   background: linear-gradient(90deg, #22d3ee, #aeeefa);
-  animation: indeterminate 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5));
+  animation: sweep 1.2s ease-in-out infinite;
 }
 
-/* keyframes for the sweeping effect */
-@keyframes indeterminate {
+@keyframes sweep {
   0%   { left: -40%; }
-  50%  { left: 30%;  width: 50%; }
-  100% { left: 100%; width: 40%; }
+  50%  { left: 30%;  width: 52%; }
+  100% { left: 100%; width: 38%; }
+}
+
+/* Success: fast fill from ~85% to 100% so it feels like a finish */
+.fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(0.85);
+  background: linear-gradient(90deg, #22d3ee, #aeeefa);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.45);
+  animation: fill 380ms ease-out forwards;
+}
+
+@keyframes fill {
+  to { transform: scaleX(1); }
 }

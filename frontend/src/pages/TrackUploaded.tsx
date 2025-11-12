@@ -5,6 +5,7 @@ import musicNote from "@/assets/MusicNoteSimple.svg";
 import NavBar from "@/components/NavBar";
 import trackUploadedBg from "@/assets/trackUploadedBg.webp";
 import { feedbackService } from "@/services/feedbackService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type UploadedAudio = { uploadId: string; name: string; url: string };
 const STORAGE_KEY = "uploadedAudio";
@@ -36,6 +37,8 @@ const TrackUploaded: FunctionComponent = () => {
   const [focus, setFocus] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [note, setNote] = useState<string>("");
+
 
   // Load the uploaded audio details from sessionStorage
   useEffect(() => {
@@ -74,6 +77,7 @@ const TrackUploaded: FunctionComponent = () => {
         upload_id: audio.uploadId,
         genre,
         feedback_focus: focus,
+        user_note: note?.trim() || undefined,
       });
       window.location.assign(`/analyzing/${res.requestId}`);
     } catch (e: any) {
@@ -113,9 +117,6 @@ const TrackUploaded: FunctionComponent = () => {
                       </div>
                     </div>
 
-                    {/* audio preview */}
-                    <audio className={styles.audio} controls preload="metadata" src={audio.url} />
-
                     <button type="button" className={styles.button7} onClick={changeTrack}>
                       <div className={styles.home}>Change track</div>
                     </button>
@@ -129,35 +130,46 @@ const TrackUploaded: FunctionComponent = () => {
                       {/* Genre */}
                       <div className={styles.dropdownItem}>
                         <div className={styles.genre}>Genre *</div>
-                        <div className={styles.selectGenre}>
-                          <select
-                            aria-label="Select genre"
-                            value={genre}
-                            onChange={(e) => setGenre(e.target.value)}
-                          >
-                            <option value="" disabled>Select genre</option>
-                            {GENRES.map((g) => (<option key={g} value={g}>{g}</option>))}
-                          </select>
-                          <img className={styles.noteTiny} src={musicNote} alt="" />
-                        </div>
+                        <Select value={genre} onValueChange={setGenre}>
+                          <SelectTrigger className={styles.selectTrigger}>
+                            <SelectValue placeholder="Select genre" />
+                          </SelectTrigger>
+                          <SelectContent >
+                            {GENRES.map((g) => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Feedback focus */}
                       <div className={styles.dropdownItem}>
                         <div className={styles.genre}>Feedback focus *</div>
-                        <div className={styles.selectGenre}>
-                          <select
-                            aria-label="Select feedback type"
-                            value={focus}
-                            onChange={(e) => setFocus(e.target.value)}
-                          >
-                            <option value="" disabled>Select feedback type</option>
-                            {FEEDBACK_FOCUS.map((f) => (<option key={f} value={f}>{f}</option>))}
-                          </select>
-                          <img className={styles.noteTiny} src={musicNote} alt="" />
-                        </div>
+                        <Select value={focus} onValueChange={setFocus}>
+                          <SelectTrigger className={styles.selectTrigger}>
+                            <SelectValue placeholder="Select feedback type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FEEDBACK_FOCUS.map((f) => (
+                              <SelectItem key={f} value={f}>{f}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
+
+                    <div className={styles.dropdownItem}>
+                      <div className={styles.genre}>Note (optional)</div>
+                      <textarea
+                        className={styles.noteArea}
+                        placeholder="Tell us what to focus on (e.g., kick too boomy after 60s, vocals thin in chorus)…"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        rows={3}
+                        maxLength={600}
+                      />
+                    </div>
+
 
                     {err && (
                       <div style={{ color: "#fecaca", marginTop: 8, fontSize: 13 }}>

@@ -1,4 +1,4 @@
-import { FunctionComponent, useCallback, useMemo, useState } from "react";
+import { FunctionComponent, useCallback, useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./SignUp.module.css";
 
@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp: FunctionComponent = () => {
   const navigate = useNavigate();
-  const { signup, status } = useAuth();
+  const { signup } = useAuth();
 
   // form state
   const [fullName, setFullName] = useState("");
@@ -22,8 +22,9 @@ const SignUp: FunctionComponent = () => {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; fullName?: string; agree?: string }>({});
 
   const canSubmit = useMemo(() => {
-    return !(submitting || status === "loading") && email.trim() && password.length >= 8 && agree;
-  }, [submitting, status, email, password, agree]);
+    const ok = fullName.trim() && email.trim() && password.length >= 8 && agree;
+    return !submitting && !!ok;
+  }, [submitting, fullName, email, password, agree]);
 
   const onSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,22 +45,29 @@ const SignUp: FunctionComponent = () => {
     try {
       setSubmitting(true);
       await signup({ email: email.trim(), password, full_name: fullName.trim() });
-      // success – pick a good post-signup page
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     } catch (err: any) {
       const message = err?.message || "Something went wrong. Please try again.";
-      setError(message);
-      if (typeof message === "string") {
-        if (message.toLowerCase().includes("email")) setFieldErrors((fe) => ({ ...fe, email: message }));
-        else if (message.toLowerCase().includes("password")) setFieldErrors((fe) => ({ ...fe, password: message }));
+      const lower = message.toLowerCase();
+
+      if (lower.includes("email")) {
+        setFieldErrors((fe) => ({ ...fe, email: message }));
+      } else if (lower.includes("password")) {
+        setFieldErrors((fe) => ({ ...fe, password: message }));
+      } else {
+        setError(message); // only for generic ones
       }
-    } finally {
-      setSubmitting(false);
+    }
+    finally {
+      setSubmitting(false); // allow instant retry
+
     }
   }, [agree, email, fullName, password, navigate, signup]);
 
   return (
     <div className={styles.signUp}>
+
+
       <div className={styles.frame}>
         <div className={styles.container}>
           {/* LEFT: Logo + Form */}
@@ -76,18 +84,7 @@ const SignUp: FunctionComponent = () => {
                 </header>
 
                 {error && (
-                  <div
-                    style={{
-                      border: "1px solid #7f1d1d",
-                      background: "rgba(239,68,68,0.08)",
-                      color: "#fecaca",
-                      borderRadius: 6,
-                      padding: "10px 12px",
-                      marginBottom: 8,
-                      fontSize: 13,
-                      lineHeight: "18px",
-                    }}
-                  >
+                  <div className={styles.inlineError}>
                     {error}
                   </div>
                 )}
@@ -104,9 +101,10 @@ const SignUp: FunctionComponent = () => {
                         onChange={(e) => setFullName(e.target.value)}
                         aria-invalid={!!fieldErrors.fullName}
                         aria-describedby={fieldErrors.fullName ? "name-error" : undefined}
+                        autoComplete="name"
                       />
                     </div>
-                    {fieldErrors.fullName && <small id="name-error" style={{ color: "#fca5a5" }}>{fieldErrors.fullName}</small>}
+                    {fieldErrors.fullName && <small id="name-error" className={styles.fieldError}>{fieldErrors.fullName}</small>}
                   </div>
 
                   <div className={styles.fieldGroup}>
@@ -121,9 +119,10 @@ const SignUp: FunctionComponent = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         aria-invalid={!!fieldErrors.email}
                         aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                        autoComplete="email"
                       />
                     </div>
-                    {fieldErrors.email && <small id="email-error" style={{ color: "#fca5a5" }}>{fieldErrors.email}</small>}
+                    {fieldErrors.email && <small id="email-error" className={styles.fieldError}>{fieldErrors.email}</small>}
                   </div>
 
                   <div className={styles.fieldGroup}>
@@ -142,9 +141,10 @@ const SignUp: FunctionComponent = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         aria-invalid={!!fieldErrors.password}
                         aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                        autoComplete="new-password"
                       />
                     </div>
-                    {fieldErrors.password && <small id="password-error" style={{ color: "#fca5a5" }}>{fieldErrors.password}</small>}
+                    {fieldErrors.password && <small id="password-error" className={styles.fieldError}>{fieldErrors.password}</small>}
                   </div>
 
                   <label className={styles.checkboxRow} htmlFor="agree">
@@ -154,10 +154,10 @@ const SignUp: FunctionComponent = () => {
                       <a className={styles.link} href="/terms" target="_blank" rel="noreferrer">Terms &amp; Conditions</a>
                     </span>
                   </label>
-                  {fieldErrors.agree && <small style={{ color: "#fca5a5", marginTop: -8 }}>{fieldErrors.agree}</small>}
+                  {fieldErrors.agree && <small className={styles.fieldError} style={{ marginTop: -8 }}>{fieldErrors.agree}</small>}
 
                   <button className={styles.cta} type="submit" disabled={!canSubmit}>
-                    {submitting || status === "loading" ? "Creating account…" : "Create account"}
+                    {submitting ? "Creating account…" : "Create account"}
                   </button>
 
                   <div className={styles.footerNote}>
@@ -169,8 +169,14 @@ const SignUp: FunctionComponent = () => {
             </div>
           </section>
 
-          {/* RIGHT: Image panel */}
-          <section className={styles.rightPane} style={{ ["--panel-bg" as any]: `url(${flexVertical})` }} aria-hidden="true" />
+          {/* RIGHT: Image panel with margin/rounding */}
+          <section
+            className={styles.rightPane}
+            style={{ ["--panel-bg" as any]: `url(${flexVertical})` }}  // <-- needs quotes
+            aria-hidden="true"
+          >
+            <div className={styles.rightBox} />
+          </section>
         </div>
       </div>
     </div>

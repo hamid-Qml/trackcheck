@@ -17,19 +17,17 @@ type UploadedState = {
   name: string;
   url: string; // local blob URL for preview on /process
 };
-const STORAGE_KEY = "uploadedAudio"; // reused by /process page
+const STORAGE_KEY = "uploadedAudio";
 
 const ACCEPTED_EXT = ["mp3", "wav", "m4a", "aac"];
 const ACCEPTED_MIME = [
-  "audio/mpeg", // mp3
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
+  "audio/mpeg", "audio/mp3",
+  "audio/wav", "audio/x-wav",
   "audio/aac",
-  "audio/m4a",
-  "audio/x-m4a",
-  "audio/mp4", // some m4a come as mp4
+  "audio/m4a", "audio/x-m4a",
+  "audio/mp4",
 ];
+const MAX_FILE_MB = 99;
 
 function isSupported(file: File) {
   const ext = (file.name.split(".").pop() || "").toLowerCase();
@@ -37,6 +35,8 @@ function isSupported(file: File) {
   if (file.type && ACCEPTED_MIME.includes(file.type.toLowerCase())) return true;
   return false;
 }
+
+type BarState = "idle" | "indeterminate" | "success";
 
 const UploadTrack: FunctionComponent = () => {
   const location = useLocation();
@@ -49,27 +49,34 @@ const UploadTrack: FunctionComponent = () => {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | undefined>(undefined);
-
   const [uploading, setUploading] = useState(false);
+  const [barState, setBarState] = useState<BarState>("idle");
 
   const triggerSelect = () => inputRef.current?.click();
 
   const onFileChosen = async (file: File) => {
     // validation
     if (!isSupported(file)) {
-      setToastMsg(undefined);
+      setToastMsg(undefined); // default message from Toast
+      setShowToast(true);
+      return;
+    }
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      setToastMsg(`File is too large. Max ${MAX_FILE_MB} MB.`);
       setShowToast(true);
       return;
     }
 
-    // upload
     try {
       setShowToast(false);
       setUploading(true);
+      setBarState("indeterminate");
 
       const res = await uploadService.uploadAudio(file);
-      const blobUrl = URL.createObjectURL(file);
 
+      // success → quick “fill to 100%”, then navigate
+      setBarState("success");
+      const blobUrl = URL.createObjectURL(file);
       const payload: UploadedState = {
         uploadId: res.id,
         name: file.name,
@@ -77,32 +84,34 @@ const UploadTrack: FunctionComponent = () => {
       };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
-      // Go to process screen
-      navigate("/process", { replace: true });
+      // let users see the finish animation
+      setTimeout(() => {
+        navigate("/process", { replace: true });
+      }, 550);
     } catch (e: any) {
       setToastMsg(e?.message || "Upload failed. Please try again.");
       setShowToast(true);
+      setBarState("idle");
     } finally {
+      // keep the bar visible if we're in the success fill stage;
+      // page will unmount right after navigation anyway
       setUploading(false);
-      // Note: we do not revoke the blob URL here because we want /process to play it.
     }
   };
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[1] ? e.target.files[0] : e.target.files?.[0];
+    const f = e.target.files?.[0];
     if (!f) return;
     onFileChosen(f);
-    // allow selecting the same file again by resetting the input
+    // allow reselecting the same file
     e.currentTarget.value = "";
   };
 
   return (
     <div className={styles.uploadTrack} style={{ ["--bg-url" as any]: `url(${bg})` }}>
       <div className={styles.slot}>
-        {/* NAVBAR */}
         <NavBar />
 
-        {/* HERO + DROPZONE */}
         <div className={styles.uploadTrackContainer}>
           <div className={styles.header}>
             <div className={styles.uploadYourTrack}>Upload your track</div>
@@ -129,14 +138,19 @@ const UploadTrack: FunctionComponent = () => {
                     style={{ display: "none" }}
                   />
 
-                  <button className={styles.button6} onClick={triggerSelect} disabled={uploading}>
-                    <div className={styles.home}>{uploading ? "Uploading..." : "Select file"}</div>
+                  <button className={styles.button6} onClick={triggerSelect} disabled={uploading || barState === "success"}>
+                    <div className={styles.home}>
+                      {barState === "success" ? "Finishing…" : uploading ? "Uploading..." : "Select file"}
+                    </div>
                     <img src={arrowRight} className={styles.iconArrowright} alt="" />
                   </button>
 
-                  {/* Uploading indicator */}
-                  <div style={{ marginTop: 16 }}>
-                    <ProgressBar visible={uploading} />
+                  {/* Progress bar: visible while uploading or during the success fill */}
+                  <div style={{ marginTop: 16, width: "100%" }}>
+                    <ProgressBar
+                      visible={uploading || barState === "success"}
+                      state={barState === "success" ? "success" : "indeterminate"}
+                    />
                   </div>
                 </div>
               </div>
@@ -156,9 +170,11 @@ const UploadTrack: FunctionComponent = () => {
           setShowToast(false);
           triggerSelect();
         }}
+        onClose={() => setShowToast(false)}
+        duration={3000}
+        position="top-center"
       />
 
-      {/* Route-driven login modal */}
       <LoginDialog open={loginOpen} onClose={closeLogin} />
     </div>
   );

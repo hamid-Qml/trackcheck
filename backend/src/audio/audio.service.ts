@@ -8,7 +8,6 @@ import { randomBytes } from 'node:crypto';
 import { AudioUpload } from './entities/audio-upload.entity';
 import { User } from '../users/entities/user.entity';
 import { ConfigService } from '@nestjs/config';
-import { UpdateUploadDto } from './dto/audio.dto';
 import { AudioFeature } from './entities/audio-feature.entity';
 
 @Injectable()
@@ -48,7 +47,7 @@ export class AudioService {
   }
 
   private toPublicUrl(relPath: string) {
-    const base = this.config.get<string>('BACKEND_PUBLIC_URL') || 'http://localhost:8000';
+    const base = this.config.get<string>('PUBLIC_APP_URL') || 'http://localhost:8000';
     const cleanRel = relPath.replace(/^\/+/, '');
     return `${base}${this.serveRoot}/${cleanRel}`;
   }
@@ -80,7 +79,7 @@ export class AudioService {
     const created = this.uploads.create({
       user,
       file_path: relativePath, // ✅ relative to the uploads volume
-      filename,
+      original_file_name: file.originalname,
       size_mb: sizeMb ?? undefined,
       status: 'uploaded',
     } as Partial<AudioUpload>);
@@ -92,7 +91,7 @@ export class AudioService {
 
     return {
       id: saved.id,
-      filename: saved.filename,
+      original_file_name: saved.original_file_name,
       file_path: saved.file_path, // relative
       size_mb: saved.size_mb ?? null,
       status: saved.status,
@@ -101,13 +100,8 @@ export class AudioService {
     };
   }
 
-  async updateUploadOwned(id: string, userId: string, dto: UpdateUploadDto) {
+  async updateUploadOwned(id: string, userId: string) {
     const row = await this.findUploadOwned(id, userId);
-    Object.assign(row, {
-      duration: dto.duration ?? row.duration,
-      genre: dto.genre ?? row.genre,
-      feedback_focus: dto.feedback_focus ?? row.feedback_focus,
-    });
     await this.uploads.save(row);
     return row;
   }

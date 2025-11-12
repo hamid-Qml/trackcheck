@@ -19,25 +19,6 @@ import { CurrentUser } from 'src/common/current-user.decorator';
 export class FeedbackController {
   constructor(private readonly feedback: FeedbackService) { }
 
-  // keep ingest for power users / internal tools
-  @Post('ingest')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: IngestFormUploadDto })
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'audio_file', maxCount: 1 },
-    { name: 'reference_audio_file', maxCount: 1 },
-  ]))
-  ingestAndStart(
-    @Body() dto: IngestFormDto,
-    @UploadedFiles() files: { audio_file?: Express.Multer.File[]; reference_audio_file?: Express.Multer.File[]; },
-    @CurrentUser() user: { userId: string },
-  ) {
-    // optional: verify dto.userId === user.userId if you keep dto.userId
-    const main = files?.audio_file?.[0];
-    const ref = files?.reference_audio_file?.[0];
-    return this.feedback.ingestAndStart(dto, main, ref);
-  }
 
   @Get('requests/:id')
   @UseGuards(AuthGuard('jwt'))

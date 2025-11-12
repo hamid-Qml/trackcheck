@@ -22,6 +22,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 
   /* image */
   background-image: var(--bg-url);
@@ -30,6 +31,23 @@
   background-position: right top;
   max-width: 100%;
 }
+
+.slot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* pick one of these (keep the first for simple dim): */
+  background: rgba(0, 0, 0, 0.55);
+  /* or a slightly richer vignette:
+  background: radial-gradient(120% 80% at 50% 20%, rgba(0,0,0,.45) 0%, rgba(0,0,0,.75) 100%);
+  */
+  pointer-events: none;
+  z-index: 0;
+}
+
+.trackUploadedContainer,
+.navbar,
+.trackUploaded2 { position: relative; z-index: 1; }
 
 /* top blur nav */
 .navbar {
@@ -56,6 +74,7 @@
   padding: 0px 24px;
   box-sizing: border-box;
 }
+
 .container {
   width: 100%;
   overflow: hidden;
@@ -65,6 +84,7 @@
   box-sizing: border-box;
   max-width: 100%;
 }
+
 .flex {
   flex: 1;
   display: flex;
@@ -72,22 +92,26 @@
   justify-content: space-between;
   gap: 20px;
 }
+
 .trakchekBlk1Icon {
   width: 81px;
   position: relative;
   max-height: 100%;
   object-fit: cover;
 }
+
 .trackUploadedFlex {
   display: flex;
   align-items: center;
   gap: 20px;
 }
+
 .flex2 {
   display: flex;
   align-items: center;
   gap: 4px;
 }
+
 .button,
 .trackUploadedButton,
 .button5 {
@@ -102,15 +126,18 @@
   color: #fafafa;
   text-decoration: none;
 }
+
 .home {
   position: relative;
   line-height: 20px;
   font-weight: 500;
 }
+
 .trackUploadedButton {
   background-color: transparent;
   border: 0.3px solid #22d3ee;
 }
+
 .button2 {
   height: 40px;
   width: 62px;
@@ -123,6 +150,7 @@
   box-sizing: border-box;
   flex-shrink: 0;
 }
+
 .button5 {
   box-shadow: 0px 0px 1.7px rgba(174, 238, 250, 0.4);
   border-radius: 9999px;
@@ -145,6 +173,7 @@
   font-size: 48px;
   font-family: Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
+
 .header {
   align-self: stretch;
   display: flex;
@@ -153,12 +182,14 @@
   justify-content: center;
   gap: 20px;
 }
+
 .weveGotYour {
   align-self: stretch;
   position: relative;
   line-height: 100%;
   font-weight: 800;
 }
+
 .chooseAGenre {
   align-self: stretch;
   position: relative;
@@ -182,6 +213,7 @@
   font-size: 14px;
   font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
+
 .card {
   border-radius: 12px;
   background-color: rgba(115, 115, 115, 0.1);
@@ -191,6 +223,7 @@
   justify-content: center;
   padding: 24px;
 }
+
 .cardContent {
   width: 454px;
   display: flex;
@@ -198,6 +231,7 @@
   align-items: flex-start;
   gap: 24px;
 }
+
 .flexVertical {
   align-self: stretch;
   border-radius: 6px;
@@ -210,6 +244,7 @@
   justify-content: center;
   padding: 24px;
 }
+
 .uploadedContent {
   width: 100%;
   display: flex;
@@ -219,6 +254,7 @@
   gap: 12px;
   max-width: 100%;
 }
+
 .flex3 {
   align-self: stretch;
   display: flex;
@@ -226,23 +262,28 @@
   justify-content: center;
   gap: 12px;
 }
+
 .musicnotesimple {
   height: 16px;
   width: 16px;
   position: relative;
 }
+
 .noteImg {
   width: 16px;
   height: 16px;
   display: block;
 }
+
 .flex4 {
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .gammaWhatsYour {
   position: relative;
+  align-items: flex-start;
   line-height: 20px;
 }
 
@@ -280,6 +321,7 @@
   gap: 40px;
   text-align: left;
 }
+
 .flexVertical2 {
   align-self: stretch;
   display: flex;
@@ -287,6 +329,7 @@
   align-items: center;
   gap: 40px;
 }
+
 .dropdownGroup {
   align-self: stretch;
   display: flex;
@@ -294,6 +337,7 @@
   align-items: flex-start;
   gap: 24px;
 }
+
 .dropdownItem {
   width: 454px;
   display: flex;
@@ -301,6 +345,7 @@
   align-items: flex-start;
   gap: 8px;
 }
+
 .genre {
   align-self: stretch;
   position: relative;
@@ -313,37 +358,91 @@
 .selectGenre {
   width: 454px;
   height: 40px;
-  border-radius: 6px;
-  background-color: #171717;
-  overflow: hidden;
-  flex-shrink: 0;
+  border-radius: 8px;
+  background-color: #0b0b0b;           /* darker, matches glass */
+  border: 1px solid #2a2a2a;           /* subtle border */
+  box-shadow: inset 0 0 0 1px rgba(174,238,250,0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  box-sizing: border-box;
   gap: 12px;
-  font-size: 12px;
-  color: #d4d4d4;
+  font-size: 13px;
+  color: #e5e5e5;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
+
+.noteArea {
+  width: 100%;
+  resize: vertical;
+  min-height: 88px;
+  border-radius: 10px;
+  background: #0b0b0b;
+  border: 1px solid rgba(34,211,238,.25);
+  color: #e5e5e5;
+  padding: 10px 12px;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  transition: box-shadow .16s ease, border-color .16s ease;
+}
+.noteArea::placeholder { color: #9ca3af; }
+.noteArea:focus {
+  outline: none;
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 3px rgba(34,211,238,.25);
+}
+
+.selectGenre:hover {
+  border-color: #3f3f46;
+  background-color: #0e0e0e;
+}
+
+/* focus ring on wrapper when the native select is focused */
+.selectGenre:focus-within {
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 3px rgba(34,211,238,0.20), inset 0 0 0 1px rgba(174,238,250,0.18);
+}
+
+/* the native select element */
 .selectGenre select {
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background: transparent;
   border: 0;
   outline: none;
-  color: #fafafa;
+  color: #e5e5e5;
   width: 100%;
   height: 100%;
   padding: 0;
   cursor: pointer;
   font: inherit;
 }
+
+/* shadcn trigger overrides to match glass/teal */
+.selectTrigger {
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#0b0b0b,#090909);
+  border: 1px solid rgba(34,211,238,.25);
+  color: #e5e5e5;
+}
+.selectTrigger:hover { border-color: rgba(34,211,238,.45); }
+.selectTrigger:focus { box-shadow: 0 0 0 3px rgba(34,211,238,.25); }
+
+
+/* dropdown list colors (supported on most browsers) */
+.selectGenre select option {
+  background-color: #0b0b0b;
+  color: #e5e5e5;
+}
+
+/* the little note icon */
 .noteTiny {
+  opacity: 0.8;
+  flex: 0 0 auto;
   width: 16px;
   height: 16px;
-  flex: 0 0 auto;
-  opacity: 0.8;
 }
 
 .button9 {
@@ -358,13 +457,16 @@
   justify-content: center;
   padding: 24px;
   gap: 4px;
-  opacity: 0.5; /* disabled look */
+  opacity: 0.5;
+  /* disabled look */
   cursor: not-allowed;
 }
+
 .button9Active {
   opacity: 1;
   cursor: pointer;
 }
+
 .yourTrackWill {
   align-self: stretch;
   position: relative;
@@ -376,10 +478,10 @@
 
 /* responsive tweaks */
 @media (max-width: 560px) {
+
   .cardContent,
   .dropdownItem,
   .selectGenre {
     width: 92vw;
   }
 }
-
