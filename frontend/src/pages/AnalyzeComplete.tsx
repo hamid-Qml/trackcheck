@@ -55,7 +55,7 @@ const emdash = "—";
 // ---------- helpers ----------
 function backendBase() {
   // allow "" (same-origin) or explicit http://localhost:8000
-  return (import.meta as any)?.env?.VITE_BACKEND_URL ?? "http://localhost:8000";
+  return (import.meta as any)?.env?.VITE_API_URL ?? "http://localhost:8000";
 }
 function buildAudioUrl(relPath?: string | null) {
   if (!relPath) return "";
