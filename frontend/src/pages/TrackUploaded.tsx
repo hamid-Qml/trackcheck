@@ -134,14 +134,15 @@ const TrackUploaded: FunctionComponent = () => {
                           <SelectTrigger className={styles.selectTrigger}>
                             <SelectValue placeholder="Select genre" />
                           </SelectTrigger>
-                          <SelectContent >
+                          <SelectContent className={styles.selectContent} position="popper" sideOffset={6}>
                             {GENRES.map((g) => (
-                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                              <SelectItem key={g} value={g} className={styles.selectItem}>
+                                {g}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-
                       {/* Feedback focus */}
                       <div className={styles.dropdownItem}>
                         <div className={styles.genre}>Feedback focus *</div>
@@ -149,13 +150,16 @@ const TrackUploaded: FunctionComponent = () => {
                           <SelectTrigger className={styles.selectTrigger}>
                             <SelectValue placeholder="Select feedback type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className={styles.selectContent} position="popper" sideOffset={6}>
                             {FEEDBACK_FOCUS.map((f) => (
-                              <SelectItem key={f} value={f}>{f}</SelectItem>
+                              <SelectItem key={f} value={f} className={styles.selectItem}>
+                                {f}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
+
                     </div>
 
                     <div className={styles.dropdownItem}>

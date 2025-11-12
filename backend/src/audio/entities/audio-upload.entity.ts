@@ -46,7 +46,7 @@ export class AudioUpload {
    * The original filename provided by the user during upload.
    * Example: `MySong.wav`
    */
-  @Column()
+  @Column({nullable: true})
   original_file_name: string;
 
   /**

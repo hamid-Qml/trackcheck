@@ -198,6 +198,87 @@
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: #d4d4d4;
 }
+/* --- Select (shadcn/radix) — trigger --- */
+.selectTrigger {
+  height: 40px;
+  border-radius: 8px;
+  background: #0c0c0c;                 /* solid dark */
+  border: 1px solid rgba(34,211,238,.35);
+  color: #f3f4f6;                       /* white text */
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 13px/1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease, color .16s ease;
+}
+
+/* make whatever lives inside inherit white */
+.selectTrigger :global(*) { color: inherit; }
+
+/* placeholder tint */
+.selectTrigger :global([data-placeholder]) { color: #a3a3a3; }
+
+/* hover / focus */
+.selectTrigger:hover {
+  background: #0f0f0f;
+  border-color: rgba(34,211,238,.55);
+}
+.selectTrigger:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34,211,238,.25);
+  border-color: rgba(34,211,238,.65);
+}
+
+/* open state accent */
+.selectTrigger[data-state="open"] {
+  background: #101010;
+  border-color: rgba(34,211,238,.75);
+}
+
+/* --- Select (shadcn/radix) — dropdown content --- */
+.selectContent {
+  background: #0b0b0b !important;       /* solid dark panel */
+  color: #f3f4f6 !important;            /* white text */
+  border: 1px solid rgba(34,211,238,.35);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.55), 0 0 0 1px rgba(34,211,238,.10) inset;
+  overflow: hidden;
+  z-index: 9999;                         /* help, but see wrapper below */
+}
+
+/* Radix wraps content in a popper wrapper — push it above textarea */
+:global([data-radix-popper-content-wrapper]) {
+  z-index: 9999;
+}
+
+/* make the whole field group a new stacking context so z-index works predictably */
+.dropdownGroup { position: relative; z-index: 1; }
+
+/* --- Select items --- */
+.selectItem {
+  padding: 8px 12px;
+  background: transparent;
+  color: #f3f4f6;
+  cursor: pointer;
+  font: 13px/1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+/* hover highlight (teal) */
+.selectItem[data-highlighted] {
+  background: #073840 !important;       /* teal-ish */
+  color: #eaffff !important;
+}
+
+/* selected state */
+.selectItem[data-state="checked"] {
+  background: #0c2d32 !important;
+  color: #eaffff !important;
+}
+
+/* scrollbars (nice-to-have) */
+.selectContent::-webkit-scrollbar { width: 8px; }
+.selectContent::-webkit-scrollbar-thumb { background: #1f3e45; border-radius: 8px; }
 
 /* glass card */
 .trackUploaded2 {
@@ -418,19 +499,6 @@
   cursor: pointer;
   font: inherit;
 }
-
-/* shadcn trigger overrides to match glass/teal */
-.selectTrigger {
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(180deg,#0b0b0b,#090909);
-  border: 1px solid rgba(34,211,238,.25);
-  color: #e5e5e5;
-}
-.selectTrigger:hover { border-color: rgba(34,211,238,.45); }
-.selectTrigger:focus { box-shadow: 0 0 0 3px rgba(34,211,238,.25); }
-
-
 /* dropdown list colors (supported on most browsers) */
 .selectGenre select option {
   background-color: #0b0b0b;
