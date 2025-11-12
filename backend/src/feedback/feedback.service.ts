@@ -38,10 +38,10 @@ export class FeedbackService {
         @InjectRepository(AudioUpload) private readonly uploads: Repository<AudioUpload>,
         @InjectRepository(AudioFeature) private readonly features: Repository<AudioFeature>,
     ) {
-        this.ML_URL = this.config.get<string>('MLEND_URL', 'http://mlend:8080');
+        this.ML_URL = this.config.get<string>('MLEND_URL', 'http://localhost:5000');
         this.ML_SECRET = this.config.get<string>('ML_CALLBACK_SECRET', '');
-        this.PUBLIC_APP_URL = this.config.get<string>('PUBLIC_APP_URL', 'http://localhost:3000');
-        this.UPLOADS_DIR = this.config.get<string>('UPLOADS_DIR', path.resolve(process.cwd(), 'uploads'));
+        this.PUBLIC_APP_URL = this.config.get<string>('PUBLIC_APP_URL', 'http://localhost:8000');
+        this.UPLOADS_DIR = this.config.get<string>('UPLOADS_DIR', path.resolve(process.cwd(), '/data/uploads'));
         if (!fs.existsSync(this.UPLOADS_DIR)) fs.mkdirSync(this.UPLOADS_DIR, { recursive: true });
     }
 
@@ -156,7 +156,8 @@ export class FeedbackService {
         form.append('callback_url', finalCbUrl);
         form.append('progress_url', progressUrl);
 
-        const mainPath = req.upload.file_path;
+        const mainPath = this.UPLOADS_DIR + '/' + req.upload.file_path;
+        console.log("PATH: ", mainPath);
         if (!fs.existsSync(mainPath)) throw new BadRequestException('Main file not found on disk');
         form.append('audio_file', fs.createReadStream(mainPath), { filename: path.basename(mainPath) });
 
@@ -167,13 +168,26 @@ export class FeedbackService {
             }
         }
 
-        const resp = await axios.post(mlUrl, form, {
-            headers: { ...form.getHeaders(), 'x-ml-secret': this.ML_SECRET || '' },
-            timeout: 30_000,
-            validateStatus: () => true,
-        });
-        if (resp.status >= 400) throw new Error(`ML returned ${resp.status}: ${resp.data?.detail ?? resp.data}`);
+        try {
+            const resp = await axios.post(mlUrl, form, {
+                headers: { ...form.getHeaders(), 'x-ml-secret': this.ML_SECRET || '' },
+                timeout: 90_000,
+                validateStatus: () => true,
+            });
 
+            if (resp.status >= 400) {
+                throw new Error(`ML returned ${resp.status}: ${JSON.stringify(resp.data)}`);
+            }
+        } catch (e: any) {
+            this.logger.error(
+                `ML trigger failed: ${e?.message || e}; ` +
+                `code=${e?.code || ''}; ` +
+                `status=${e?.response?.status || ''}; ` +
+                `data=${e?.response ? JSON.stringify(e.response.data) : ''}`
+            );
+            throw e;
+        }
+        
         await this.requests.update(
             { id: req.id },
             { status: 'extracting', progress: { percent: 5, stage: 'received', status: 'processing' } as FeedbackProgress },

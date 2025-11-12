@@ -20,5 +20,5 @@ COPY --from=build /app/dist ./dist
 # uploads directory (also mounted as volume)
 RUN mkdir -p /data/uploads
 
-EXPOSE 3000
+EXPOSE 8000
 CMD ["node", "dist/main.js"]

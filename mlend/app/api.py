@@ -230,6 +230,7 @@ async def feedback_endpoint(
           detail=f"Failed to enqueue processing: {str(e)}",
       )
 
+
 # ===========================
 # App Factory
 # ===========================
@@ -242,6 +243,12 @@ def create_app() -> FastAPI:
             "and GPT-based feedback generation for electronic music tracks."
         ),
     )
+
+    @app.get("/healthz", summary="Liveness/health check")
+    async def healthz():
+        return {"ok": True, "service": "mlend", "status": "healthy"}
+
+
     app.include_router(router)
     return app
 

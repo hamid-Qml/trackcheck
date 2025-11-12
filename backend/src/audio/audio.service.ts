@@ -48,7 +48,7 @@ export class AudioService {
   }
 
   private toPublicUrl(relPath: string) {
-    const base = this.config.get<string>('BACKEND_PUBLIC_URL') || 'http://localhost:3000';
+    const base = this.config.get<string>('BACKEND_PUBLIC_URL') || 'http://localhost:8000';
     const cleanRel = relPath.replace(/^\/+/, '');
     return `${base}${this.serveRoot}/${cleanRel}`;
   }

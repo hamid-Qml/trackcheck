@@ -12,7 +12,6 @@ export type JwtUser = {
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): JwtUser | undefined => {
     const request = ctx.switchToHttp().getRequest();
-    console.log("REQUEST: ",request);
     return request?.user as JwtUser | undefined;
   },
 );
