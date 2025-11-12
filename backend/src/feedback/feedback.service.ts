@@ -105,7 +105,7 @@ export class FeedbackService {
             );
             throw e;
         }
-        
+
         await this.requests.update(
             { id: req.id },
             { status: 'extracting', progress: { percent: 5, stage: 'received', status: 'processing' } as FeedbackProgress },
@@ -206,31 +206,44 @@ export class FeedbackService {
     }
 
     // Persist/merge features into AudioFeature row (1:1 per upload)
+    // in upsertAudioFeatures()
     private async upsertAudioFeatures(upload: AudioUpload, meta: any) {
-        // Find existing row (if you ever re-run)
         let row = await this.features.findOne({ where: { upload: { id: upload.id } }, relations: ['upload'] })
             .catch(() => null);
 
-        const payload = {
+        // Accept both v1.1 (float) and v1.2 ({linear,dbfs})
+        const peakRms =
+            (meta?.peak_rms && typeof meta.peak_rms === 'object')
+                ? meta.peak_rms
+                : (typeof meta?.peak_rms === 'number' ? { linear: meta.peak_rms } : null);
+
+        const payload: Partial<AudioFeature> = {
             upload,
             tempo: meta?.tempo ?? null,
             key: meta?.key ?? null,
-            peak_rms: meta?.peak_rms ?? null,
+            duration: meta?.duration ?? null,            // NEW: ensure we store it
+            peak_rms: peakRms,                           // JSONB
+
             spectral_centroid: meta?.centroid ?? null,
             spectral_rolloff: meta?.rolloff ?? null,
             bandwidth: meta?.bandwidth ?? null,
             flatness: meta?.flatness ?? null,
+
             energy_profile: meta?.energy_profile ?? null,
             transients_info: meta?.transients_info ?? null,
-            vocal_timestamps: meta?.vocal_timestamps ?? null,
+            silence_segments: meta?.silence_segments ?? null,
+
+            vocal_timestamps: meta?.vocal_timestamps ?? null, // now [{start,end}]
+            vocal_intensity: meta?.vocal_intensity ?? null,
+
             drop_timestamps: meta?.drop_timestamps ?? null,
+
+            // keep both text + segments under structure keys you already expose
+            structure: meta?.structure ?? null,                     // the notes string
+            structure_segments: meta?.structure_segments ?? null,   // [{start,end,label,energy}]
+
             fx_and_transitions: meta?.fx_and_transitions ?? null,
-            structure: {
-                structure_text: meta?.structure ?? null,
-                silence_segments: meta?.silence_segments ?? null,
-                structure_segments: meta?.structure_segments ?? null,
-            },
-        } as Partial<AudioFeature>;
+        };
 
         if (row) {
             Object.assign(row, payload);
@@ -240,6 +253,7 @@ export class FeedbackService {
             await this.features.save(row);
         }
     }
+
 
     // -------- AI outputs listing (unchanged) --------
     findAllAi() { return this.ai.find({ relations: ['upload', 'reference_upload'], order: { created_at: 'DESC' } }); }

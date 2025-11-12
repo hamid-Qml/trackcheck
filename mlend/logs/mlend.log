@@ -48,3 +48,23 @@
 2025-11-11 13:52:43,333 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/1116b4f1-4320-4e03-a98d-0ac4c083af2e
 2025-11-11 13:52:43,416 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/1116b4f1-4320-4e03-a98d-0ac4c083af2e body={"percent": 100, "stage": "completed", "meta": {}, "status": "completed"} headers={'x-ml-secret': '***'}
 2025-11-11 13:52:43,446 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/1116b4f1-4320-4e03-a98d-0ac4c083af2e
+2025-11-12 16:01:04,975 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40 body={"percent": 5, "stage": "received", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 16:01:05,018 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40
+2025-11-12 16:01:05,018 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40 body={"percent": 15, "stage": "extracting_main", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 16:01:05,055 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40
+2025-11-12 16:01:47,221 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40 body={"percent": 65, "stage": "prompting", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 16:01:47,289 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40
+2025-11-12 16:02:01,465 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40 body={"percent": 95, "stage": "finalizing", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 16:02:01,494 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40
+2025-11-12 16:02:01,578 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40 body={"percent": 100, "stage": "completed", "meta": {}, "status": "completed"} headers={'x-ml-secret': '***'}
+2025-11-12 16:02:01,609 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/65982c3e-21d3-4470-8682-619d32149e40
+2025-11-12 18:31:19,560 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56 body={"percent": 5, "stage": "received", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 18:31:19,595 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56
+2025-11-12 18:31:19,596 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56 body={"percent": 15, "stage": "extracting_main", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 18:31:19,622 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56
+2025-11-12 18:31:51,504 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56 body={"percent": 65, "stage": "prompting", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 18:31:51,529 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56
+2025-11-12 18:32:05,665 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56 body={"percent": 95, "stage": "finalizing", "meta": {}, "status": "processing"} headers={'x-ml-secret': '***'}
+2025-11-12 18:32:05,702 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56
+2025-11-12 18:32:05,759 [INFO] progress: [progress] POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56 body={"percent": 100, "stage": "completed", "meta": {}, "status": "completed"} headers={'x-ml-secret': '***'}
+2025-11-12 18:32:05,786 [INFO] progress: [progress] OK 201 POST http://localhost:8000/api/feedback/progress/b72c10f4-ff30-42a9-9363-21849ff0fd56

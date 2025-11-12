@@ -26,12 +26,13 @@ Extracted Audio Data:
 - Tempo: {tempo}
 - Key: {key}
 - Duration: {duration} seconds
-- Loudness: Peak RMS = {peak_rms}
+- Loudness: Peak RMS = {peak_rms} Linear and dbFS
 - Spectral Analysis:
   - Spectral Centroid = {centroid} Hz
   - Rolloff = {rolloff} Hz
   - Bandwidth = {bandwidth} Hz
 - Dynamics & Energy Profile: {energy_profile}
+(Note: time-series lists like energy_profile/transients may be downsampled for brevity; units are seconds for time, Hz for frequency, and dB for loudness.)
 - Transients: {transients_info}
 - Vocal Sections: {vocal_timestamps}
 - Drop Timestamps: {drop_timestamps}

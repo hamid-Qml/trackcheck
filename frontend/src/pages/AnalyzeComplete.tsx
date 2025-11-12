@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "@/services/api";
 import styles from "./AnalyzeComplete.module.css";
@@ -13,7 +13,7 @@ type ReqBundle = {
   upload?: {
     id: string;
     filename: string;
-    file_path: string;
+    file_path: string; // NOTE: we prepend backend base + /upload/
     duration?: number | null;
     size_mb?: number | null;
     genre?: string | null;
@@ -52,32 +52,85 @@ type TabKey = "metrics" | "features" | "ai";
 
 const emdash = "—";
 
+// ---------- helpers ----------
+function backendBase() {
+  // allow "" (same-origin) or explicit http://localhost:8000
+  return (import.meta as any)?.env?.VITE_BACKEND_URL ?? "http://localhost:8000";
+}
+function buildAudioUrl(relPath?: string | null) {
+  if (!relPath) return "";
+  // As requested: <backend>/<upload>/<file_path>
+  return `${backendBase()}/uploads/${relPath}`.replace(/([^:]\/)\/+/g, "$1");
+}
+
 function extFromFilename(name?: string) {
   if (!name) return emdash;
   const i = name.lastIndexOf(".");
   if (i === -1) return emdash;
   return name.slice(i + 1).toUpperCase();
 }
-
 function formatSeconds(sec?: number | null) {
-  if (!sec && sec !== 0) return emdash;
+  if (sec == null) return emdash;
   const s = Math.max(0, Math.floor(sec));
   const m = Math.floor(s / 60);
   const r = s % 60;
   return `${m}:${r.toString().padStart(2, "0")}`;
 }
-
 function pct(n?: number | null) {
   if (n == null || Number.isNaN(n)) return emdash;
   return `${Math.round(n)}%`;
 }
+function titleCase(s: string) {
+  return s.replace(/_/g, " ").replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1));
+}
+function fmtNum(v: any, suffix?: string) {
+  if (v == null || Number.isNaN(Number(v))) return emdash;
+  const n = Number(v);
+  return `${Math.round(n)}${suffix ? ` ${suffix}` : ""}`;
+}
 
-function takeSnapshotMetric(snapshot: any, key: string): number | null {
-  if (!snapshot || typeof snapshot !== "object") return null;
-  const v = snapshot[key];
-  if (v == null) return null;
-  const num = Number(v);
-  return Number.isFinite(num) ? num : null;
+// ---------- components ----------
+function MetricRow({ label, sub, value }: { label: string; sub: string; value: number }) {
+  const clamped = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div className={styles.metricRow}>
+      <div className={styles.metricTitle}>
+        <div className={styles.metricLabel}>{label}</div>
+        <div className={styles.metricSub}>{sub}</div>
+      </div>
+      <div className={styles.metricBarWrap}>
+        <div className={styles.metricBar}>
+          <div className={styles.metricBarFill} style={{ width: `${clamped}%` }} />
+        </div>
+        <div className={styles.metricPct}>{clamped}%</div>
+      </div>
+    </div>
+  );
+}
+function ScoreTile({ label, value }: { label: string; value?: number | null }) {
+  const show = value != null && Number.isFinite(Number(value));
+  const v = show ? Math.round(Number(value)) : null;
+  return (
+    <div className={styles.scoreTile}>
+      <div className={styles.scoreTileLabel}>{label}</div>
+      <div className={styles.scoreTileBar}>
+        <div className={styles.scoreTileFill} style={{ width: show ? `${v}%` : "0%" }} />
+      </div>
+      <div className={styles.scoreTileValue}>{show ? `${v}%` : emdash}</div>
+    </div>
+  );
+}
+function KV({ title, value }: { title: string; value: string | number }) {
+  return (
+    <div className={styles.kv}>
+      <div className={styles.kvLabel}>{title}</div>
+      <div className={styles.kvValue}>{value as any}</div>
+    </div>
+  );
+}
+function renderMetricIfPresent(label: string, sub: string, value: number | null) {
+  if (value == null) return null;
+  return <MetricRow key={label} label={label} sub={sub} value={value} />;
 }
 
 const AnalyzeComplete = () => {
@@ -85,7 +138,8 @@ const AnalyzeComplete = () => {
   const [data, setData] = useState<ReqBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabKey>("metrics");
+  const [tab, setTab] = useState<TabKey>("ai"); // land on AI if present
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -93,6 +147,10 @@ const AnalyzeComplete = () => {
         setLoading(true);
         const res = await api(`/feedback/requests/${id}`);
         setData(res);
+        // choose initial tab smartly
+        if (res?.ai_feedback) setTab("ai");
+        else if (res?.features?.main) setTab("features");
+        else setTab("metrics");
       } catch (e) {
         console.error(e);
         setErr("Failed to load analysis.");
@@ -104,17 +162,35 @@ const AnalyzeComplete = () => {
 
   const filename = data?.upload?.filename ?? "";
   const format = extFromFilename(filename);
-  const duration = formatSeconds(data?.upload?.duration ?? null);
+
+  // Prefer feature duration if upload one is missing
+  const durationSecs: number | null =
+    (data?.upload?.duration ?? null) ??
+    (data?.features?.main?.duration ?? null) ??
+    null;
+  const duration = formatSeconds(durationSecs);
+
   const tempo = data?.features?.main?.tempo as number | undefined;
   const keySig = data?.features?.main?.key as string | undefined;
-  const peakRms = data?.features?.main?.peak_rms;
 
-  const snapshot = data?.features?.main?.summary_snapshot ?? null;
-  const danceability = takeSnapshotMetric(snapshot, "danceability");
-  const valence = takeSnapshotMetric(snapshot, "valence");
-  const liveness = takeSnapshotMetric(snapshot, "liveness");
-  const acousticness = takeSnapshotMetric(snapshot, "acousticness");
-  const instrumentalness = takeSnapshotMetric(snapshot, "instrumentalness");
+  const peakObj = data?.features?.main?.peak_rms;
+  const loudnessText =
+    peakObj && typeof peakObj === "object" && Number.isFinite(peakObj?.dbfs)
+      ? `${Math.round(Number(peakObj.dbfs))} dBFS`
+      : peakObj && Number.isFinite(Number(peakObj))
+      ? `${Math.round(Number(peakObj))} (lin)`
+      : emdash;
+
+  const flatness = data?.features?.main?.flatness as number | undefined;
+
+  // tiles: useful quick facts
+  const centroid = data?.features?.main?.spectral_centroid;
+  const rolloff = data?.features?.main?.spectral_rolloff;
+  const bandwidth = data?.features?.main?.bandwidth;
+  const fileSizeMb = data?.upload?.size_mb;
+
+  const audioSrc = buildAudioUrl(data?.upload?.file_path);
+  console.log("audioSrc", audioSrc);
 
   const scoreText = useMemo(() => {
     if (data?.computed?.overall_score == null) return emdash;
@@ -132,7 +208,6 @@ const AnalyzeComplete = () => {
       </div>
     );
   }
-
   if (err) {
     return (
       <div className={styles.page}>
@@ -142,7 +217,6 @@ const AnalyzeComplete = () => {
       </div>
     );
   }
-
   if (!data) {
     return (
       <div className={styles.page}>
@@ -156,6 +230,14 @@ const AnalyzeComplete = () => {
   const selFocus = data.selections?.feedback_focus ?? data.upload?.feedback_focus ?? null;
   const selGenre = data.selections?.genre ?? data.upload?.genre ?? null;
   const selNote = data.selections?.user_note ?? null;
+
+  // snapshot metrics (if you ever populate them)
+  const snapshot = data?.features?.main?.summary_snapshot ?? null;
+  const danceability = snapshot?.danceability ?? null;
+  const valence = snapshot?.valence ?? null;
+  const liveness = snapshot?.liveness ?? null;
+  const acousticness = snapshot?.acousticness ?? null;
+  const instrumentalness = snapshot?.instrumentalness ?? null;
 
   return (
     <div className={styles.page}>
@@ -188,9 +270,10 @@ const AnalyzeComplete = () => {
           </div>
 
           <div className={styles.actions}>
-            <Link to="/upload" className={`${styles.ghostBtn} ${styles.actionBtn}`}>Analyze another track</Link>
-            <button className={`${styles.ghostBtn} ${styles.actionBtn}`} type="button">Share</button>
-            <button className={`${styles.ghostBtn} ${styles.actionBtn}`} type="button">Export report</button>
+            {/* takes you to homepage as requested */}
+            <Link to="/" className={`${styles.ghostBtn} ${styles.actionBtn}`}>Analyze another track</Link>
+            <button className={`${styles.ghostBtn} ${styles.actionBtn}`} type="button" disabled title="Coming soon">Share</button>
+            <button className={`${styles.ghostBtn} ${styles.actionBtn}`} type="button" disabled title="Coming soon">Export report</button>
           </div>
         </div>
 
@@ -248,14 +331,19 @@ const AnalyzeComplete = () => {
             </div>
           </div>
 
-          {/* Playbar (static visual) */}
-          <div className={styles.playbar}>
-            <button className={styles.playBtn} aria-label="Play / Pause" />
-            <div className={styles.wave}>
-              {Array.from({ length: 120 }).map((_, i) => (
-                <i key={i} className={styles.waveBar} style={{ height: `${6 + ((i * 7) % 34)}px` }} />
-              ))}
-            </div>
+          {/* Real audio player */}
+          <div className={styles.playerWrap}>
+            {audioSrc ? (
+              <audio
+                ref={audioRef}
+                className={styles.audio}
+                src={audioSrc}
+                controls
+                preload="metadata"
+              />
+            ) : (
+              <div className={styles.audioEmpty}>Audio file unavailable.</div>
+            )}
           </div>
 
           {/* Badges */}
@@ -272,35 +360,35 @@ const AnalyzeComplete = () => {
             </div>
             <div className={styles.badge}>
               <span className={styles.badgeLabel}>Loudness</span>
+              <span className={styles.badgeValue}>{loudnessText}</span>
+            </div>
+            <div className={styles.badge}>
+              <span className={styles.badgeLabel}>Flatness</span>
               <span className={styles.badgeValue}>
-                {peakRms != null ? `${Math.round(peakRms)} dB` : emdash}
+                {flatness != null ? Number(flatness).toFixed(3) : emdash}
               </span>
             </div>
           </div>
 
-          {/* Upload details */}
+          {/* Quick facts tiles (replacing sample rate/bitrate/time signature) */}
           <div className={styles.tileGrid}>
-            <div className={styles.tile}>
-              <div className={styles.tileLabel}>Sample Rate</div>
-              <div className={styles.tileValue}>
-                {snapshot?.sample_rate ? `${snapshot.sample_rate} kHz` : emdash}
-              </div>
-            </div>
-            <div className={styles.tile}>
-              <div className={styles.tileLabel}>Bitrate</div>
-              <div className={styles.tileValue}>
-                {snapshot?.bitrate ? `${snapshot.bitrate} kbps` : emdash}
-              </div>
-            </div>
             <div className={styles.tile}>
               <div className={styles.tileLabel}>File Size</div>
               <div className={styles.tileValue}>
-                {data?.upload?.size_mb ? `${data.upload.size_mb.toFixed(2)} MB` : emdash}
+                {fileSizeMb ? `${fileSizeMb.toFixed(2)} MB` : emdash}
               </div>
             </div>
             <div className={styles.tile}>
-              <div className={styles.tileLabel}>Time Signature</div>
-              <div className={styles.tileValue}>{snapshot?.time_signature ?? emdash}</div>
+              <div className={styles.tileLabel}>Spectral Centroid</div>
+              <div className={styles.tileValue}>{fmtNum(centroid, "Hz")}</div>
+            </div>
+            <div className={styles.tile}>
+              <div className={styles.tileLabel}>Spectral Rolloff</div>
+              <div className={styles.tileValue}>{fmtNum(rolloff, "Hz")}</div>
+            </div>
+            <div className={styles.tile}>
+              <div className={styles.tileLabel}>Bandwidth</div>
+              <div className={styles.tileValue}>{fmtNum(bandwidth, "Hz")}</div>
             </div>
           </div>
         </div>
@@ -308,13 +396,6 @@ const AnalyzeComplete = () => {
         {/* Right column with tabs */}
         <div className={styles.rightCol}>
           <div className={styles.tabsRow}>
-            <button
-              className={`${styles.tab} ${tab === "metrics" ? styles.tabActive : ""}`}
-              onClick={() => setTab("metrics")}
-              type="button"
-            >
-              Audio Metrics
-            </button>
             <button
               className={`${styles.tab} ${tab === "features" ? styles.tabActive : ""}`}
               onClick={() => setTab("features")}
@@ -353,10 +434,10 @@ const AnalyzeComplete = () => {
 
           {tab === "features" && (
             <div className={styles.featuresPanel}>
-              <KV title="Spectral Centroid" value={fmtNum(data?.features?.main?.spectral_centroid, "Hz")} />
-              <KV title="Spectral Rolloff" value={fmtNum(data?.features?.main?.spectral_rolloff, "Hz")} />
-              <KV title="Bandwidth" value={fmtNum(data?.features?.main?.bandwidth, "Hz")} />
-              <KV title="Flatness" value={fmtNum(data?.features?.main?.flatness)} />
+              <KV title="Spectral Centroid" value={fmtNum(centroid, "Hz")} />
+              <KV title="Spectral Rolloff" value={fmtNum(rolloff, "Hz")} />
+              <KV title="Bandwidth" value={fmtNum(bandwidth, "Hz")} />
+              <KV title="Flatness" value={flatness != null ? Number(flatness).toFixed(6) : emdash} />
               <KV
                 title="Transient count"
                 value={Array.isArray(data?.features?.main?.transients_info) ? data!.features!.main!.transients_info.length : emdash}
@@ -385,28 +466,27 @@ const AnalyzeComplete = () => {
                 <ScoreTile label="Suggestions" value={data?.ai_feedback?.suggestions_score} />
               </div>
 
-              <AITextBlock title="Mix Quality" body={data?.ai_feedback?.mix_quality_text} />
-              <AITextBlock title="Arrangement" body={data?.ai_feedback?.arrangement_text} />
-              <AITextBlock title="Creativity" body={data?.ai_feedback?.creativity_text} />
-              <AITextBlock title="Overall Suggestions" body={data?.ai_feedback?.suggestions_text} />
+              <AIBlock
+                title="Mix Quality"
+                body={data?.ai_feedback?.mix_quality_text}
+                bullets={data?.ai_feedback?.recommendations?.mix_quality}
+              />
+              <AIBlock
+                title="Arrangement"
+                body={data?.ai_feedback?.arrangement_text}
+                bullets={data?.ai_feedback?.recommendations?.arrangement}
+              />
+              <AIBlock
+                title="Creativity"
+                body={data?.ai_feedback?.creativity_text}
+                bullets={data?.ai_feedback?.recommendations?.creativity}
+              />
+              <AIBlock
+                title="Overall Suggestions"
+                body={data?.ai_feedback?.suggestions_text}
+                bullets={data?.ai_feedback?.recommendations?.suggestions_for_improvement}
+              />
 
-              {/* Bullet recommendations by category */}
-              {data?.ai_feedback?.recommendations && (
-                <div className={styles.recGrid}>
-                  {Object.entries(data.ai_feedback.recommendations).map(([section, items]) => (
-                    <div key={section} className={styles.recCard}>
-                      <div className={styles.recTitle}>{titleCase(section)}</div>
-                      <ul className={styles.recList}>
-                        {(items as string[]).map((t, i) => (
-                          <li key={i}>{t}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Model / meta */}
               <div className={styles.metaRow}>
                 <span>Model: {data?.ai_feedback?.model || emdash}</span>
                 <span>Prompt v{data?.ai_feedback?.prompt_version || emdash}</span>
@@ -423,68 +503,19 @@ const AnalyzeComplete = () => {
   );
 };
 
-function renderMetricIfPresent(label: string, sub: string, value: number | null) {
-  if (value == null) return null;
-  return <MetricRow key={label} label={label} sub={sub} value={value} />;
-}
-
-function fmtNum(v: any, suffix?: string) {
-  if (v == null || Number.isNaN(Number(v))) return emdash;
-  const n = Number(v);
-  return `${Math.round(n)}${suffix ? ` ${suffix}` : ""}`;
-}
-
-function titleCase(s: string) {
-  return s.replace(/_/g, " ").replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1));
-}
-
-function MetricRow({ label, sub, value }: { label: string; sub: string; value: number }) {
-  const clamped = Math.max(0, Math.min(100, Math.round(value)));
-  return (
-    <div className={styles.metricRow}>
-      <div className={styles.metricTitle}>
-        <div className={styles.metricLabel}>{label}</div>
-        <div className={styles.metricSub}>{sub}</div>
-      </div>
-      <div className={styles.metricBarWrap}>
-        <div className={styles.metricBar}>
-          <div className={styles.metricBarFill} style={{ width: `${clamped}%` }} />
-        </div>
-        <div className={styles.metricPct}>{clamped}%</div>
-      </div>
-    </div>
-  );
-}
-
-function ScoreTile({ label, value }: { label: string; value?: number | null }) {
-  const show = value != null && Number.isFinite(Number(value));
-  const v = show ? Math.round(Number(value)) : null;
-  return (
-    <div className={styles.scoreTile}>
-      <div className={styles.scoreTileLabel}>{label}</div>
-      <div className={styles.scoreTileBar}>
-        <div className={styles.scoreTileFill} style={{ width: show ? `${v}%` : "0%" }} />
-      </div>
-      <div className={styles.scoreTileValue}>{show ? `${v}%` : emdash}</div>
-    </div>
-  );
-}
-
-function KV({ title, value }: { title: string; value: string | number }) {
-  return (
-    <div className={styles.kv}>
-      <div className={styles.kvLabel}>{title}</div>
-      <div className={styles.kvValue}>{value as any}</div>
-    </div>
-  );
-}
-
-function AITextBlock({ title, body }: { title: string; body?: string | null }) {
-  if (!body) return null;
+function AIBlock({ title, body, bullets }: { title: string; body?: string | null; bullets?: string[] }) {
+  if (!body && !bullets?.length) return null;
   return (
     <div className={styles.aiText}>
       <div className={styles.aiTextTitle}>{title}</div>
-      <p className={styles.aiTextBody}>{body}</p>
+      {body && <p className={styles.aiTextBody}>{body}</p>}
+      {bullets?.length ? (
+        <ul className={styles.aiBulletList}>
+          {bullets.slice(0, 6).map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

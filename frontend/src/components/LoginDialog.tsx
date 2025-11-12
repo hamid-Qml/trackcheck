@@ -43,7 +43,7 @@ const LoginDialog: FC<Props> = ({ open, onClose }) => {
     try {
       await login(email.trim(), password);
       // If user came from a protected page, go back there; otherwise to /dashboard (or /)
-      const to = location.state?.from?.pathname || "/dashboard";
+      const to = location.state?.from?.pathname || "/";
       onClose();
       navigate(to, { replace: true });
     } catch (err: any) {
