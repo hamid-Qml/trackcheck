@@ -1,7 +1,27 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  type MouseEvent,
+} from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "@/services/api";
 import styles from "./AnalyzeComplete.module.css";
+
+// ---- icon assets ----
+import AiInsightsIcon from "@/assets/analyze_comlpete/ai_insights.png";
+import AnalyzeAnotherIcon from "@/assets/analyze_comlpete/analyze_another_track.svg";
+import AudioMetricsIcon from "@/assets/analyze_comlpete/audio_metrics.png";
+import EnergyIcon from "@/assets/analyze_comlpete/energy.svg";
+import ExportReportIcon from "@/assets/analyze_comlpete/export_report.svg";
+import KeyIcon from "@/assets/analyze_comlpete/Key.svg";
+import LoudnessIcon from "@/assets/analyze_comlpete/loudness.png";
+import PauseAudioIcon from "@/assets/analyze_comlpete/PauseAudio.png";
+import PlayAudioIcon from "@/assets/analyze_comlpete/PlayAudio.svg";
+import ShareIcon from "@/assets/analyze_comlpete/share.svg";
+import SpectralAnalysisIcon from "@/assets/analyze_comlpete/spectral_analysis.png";
+import TempoIcon from "@/assets/analyze_comlpete/tempo.svg";
 
 type ReqBundle = {
   id: string;
@@ -9,11 +29,15 @@ type ReqBundle = {
   progress?: { percent: number; stage: string; status?: string };
   created_at: string;
   updated_at: string;
-  selections?: { feedback_focus?: string | null; genre?: string | null; user_note?: string | null };
+  selections?: {
+    feedback_focus?: string | null;
+    genre?: string | null;
+    user_note?: string | null;
+  };
   upload?: {
     id: string;
     filename: string;
-    file_path: string; // NOTE: we prepend backend base + /upload/
+    file_path: string;
     duration?: number | null;
     size_mb?: number | null;
     genre?: string | null;
@@ -53,14 +77,15 @@ type TabKey = "metrics" | "features" | "ai";
 const emdash = "—";
 
 // ---------- helpers ----------
-function backendBase() {
-  // allow "" (same-origin) or explicit http://localhost:8000
-  return (import.meta as any)?.env?.VITE_API_URL ?? "http://localhost:8000";
+function uploadsBase() {
+  // Optional: VITE_UPLOAD_BASE can be "https://trackcheck..." in prod
+  // If not set, we assume same-origin and just use "/uploads"
+  return (import.meta as any)?.env?.VITE_UPLOAD_BASE ?? "http://localhost:8000";
 }
+
 function buildAudioUrl(relPath?: string | null) {
   if (!relPath) return "";
-  // As requested: <backend>/<upload>/<file_path>
-  return `${backendBase()}/uploads/${relPath}`.replace(/([^:]\/)\/+/g, "$1");
+  return `${uploadsBase()}/uploads/${relPath}`.replace(/([^:]\/)\/+/g, "$1");
 }
 
 function extFromFilename(name?: string) {
@@ -69,6 +94,7 @@ function extFromFilename(name?: string) {
   if (i === -1) return emdash;
   return name.slice(i + 1).toUpperCase();
 }
+
 function formatSeconds(sec?: number | null) {
   if (sec == null) return emdash;
   const s = Math.max(0, Math.floor(sec));
@@ -76,37 +102,19 @@ function formatSeconds(sec?: number | null) {
   const r = s % 60;
   return `${m}:${r.toString().padStart(2, "0")}`;
 }
+
 function pct(n?: number | null) {
   if (n == null || Number.isNaN(n)) return emdash;
   return `${Math.round(n)}%`;
 }
-function titleCase(s: string) {
-  return s.replace(/_/g, " ").replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1));
-}
+
 function fmtNum(v: any, suffix?: string) {
   if (v == null || Number.isNaN(Number(v))) return emdash;
   const n = Number(v);
   return `${Math.round(n)}${suffix ? ` ${suffix}` : ""}`;
 }
 
-// ---------- components ----------
-function MetricRow({ label, sub, value }: { label: string; sub: string; value: number }) {
-  const clamped = Math.max(0, Math.min(100, Math.round(value)));
-  return (
-    <div className={styles.metricRow}>
-      <div className={styles.metricTitle}>
-        <div className={styles.metricLabel}>{label}</div>
-        <div className={styles.metricSub}>{sub}</div>
-      </div>
-      <div className={styles.metricBarWrap}>
-        <div className={styles.metricBar}>
-          <div className={styles.metricBarFill} style={{ width: `${clamped}%` }} />
-        </div>
-        <div className={styles.metricPct}>{clamped}%</div>
-      </div>
-    </div>
-  );
-}
+// ---------- small components ----------
 function ScoreTile({ label, value }: { label: string; value?: number | null }) {
   const show = value != null && Number.isFinite(Number(value));
   const v = show ? Math.round(Number(value)) : null;
@@ -114,12 +122,18 @@ function ScoreTile({ label, value }: { label: string; value?: number | null }) {
     <div className={styles.scoreTile}>
       <div className={styles.scoreTileLabel}>{label}</div>
       <div className={styles.scoreTileBar}>
-        <div className={styles.scoreTileFill} style={{ width: show ? `${v}%` : "0%" }} />
+        <div
+          className={styles.scoreTileFill}
+          style={{ width: show ? `${v}%` : "0%" }}
+        />
       </div>
-      <div className={styles.scoreTileValue}>{show ? `${v}%` : emdash}</div>
+      <div className={styles.scoreTileValue}>
+        {show ? `${v}%` : emdash}
+      </div>
     </div>
   );
 }
+
 function KV({ title, value }: { title: string; value: string | number }) {
   return (
     <div className={styles.kv}>
@@ -128,18 +142,182 @@ function KV({ title, value }: { title: string; value: string | number }) {
     </div>
   );
 }
-function renderMetricIfPresent(label: string, sub: string, value: number | null) {
-  if (value == null) return null;
-  return <MetricRow key={label} label={label} sub={sub} value={value} />;
+
+// Simple “sparkline” style graph for energy_profile
+function EnergyGraph({ profile }: { profile?: { t: number; rms: number }[] }) {
+  if (!profile || !profile.length) {
+    return (
+      <div className={styles.metricsEmpty}>
+        No energy profile available for this track.
+      </div>
+    );
+  }
+
+  const maxLen = 120;
+  const step = Math.max(1, Math.floor(profile.length / maxLen));
+  const bars = profile.filter((_, idx) => idx % step === 0);
+  const max = bars.reduce((m, b) => (b.rms > m ? b.rms : m), 0) || 1;
+
+  return (
+    <div className={styles.energyBlock}>
+      <div className={styles.energyHeader}>
+        <div className={styles.energyTitle}>Energy over time</div>
+        <div className={styles.energySub}>
+          Each bar shows relative RMS loudness across the track.
+        </div>
+      </div>
+      <div className={styles.energyGraph}>
+        {bars.map((b, i) => (
+          <div
+            key={i}
+            className={styles.energyBar}
+            style={{ height: `${(b.rms / max) * 100}%` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
+type EnergyPoint = { t: number; rms: number };
+
+function EnergyTimeline({
+  duration,
+  energyProfile,
+  vocalSegments,
+  dropTimestamps,
+}: {
+  duration: number | null;
+  energyProfile?: EnergyPoint[];
+  vocalSegments?: { start: number; end: number }[];
+  dropTimestamps?: number[];
+}) {
+  if (!duration || duration <= 0) {
+    return (
+      <div className={styles.metricsEmpty}>
+        No timeline information available for this track.
+      </div>
+    );
+  }
+
+  const profile = energyProfile && energyProfile.length ? energyProfile : undefined;
+
+  let bars: EnergyPoint[] = [];
+  let maxRms = 1;
+
+  if (profile) {
+    const maxLen = 120;
+    const step = Math.max(1, Math.floor(profile.length / maxLen));
+    bars = profile.filter((_, idx) => idx % step === 0);
+    maxRms =
+      bars.reduce((m, b) => (typeof b.rms === "number" && b.rms > m ? b.rms : m), 0) ||
+      1;
+  }
+
+  const drops = (dropTimestamps || []).filter((t) => t >= 0 && t <= duration);
+  const vocals = (vocalSegments || []).filter(
+    (seg) =>
+      typeof seg?.start === "number" &&
+      typeof seg?.end === "number" &&
+      seg.end > seg.start
+  );
+
+  return (
+    <div className={styles.energyBlock}>
+      <div className={styles.energyHeader}>
+        <div className={styles.energyTitle}>Timeline</div>
+        <div className={styles.energySub}>
+          RMS loudness (bars), vocal sections (teal bands) and drops (markers).
+        </div>
+      </div>
+
+      <div className={styles.timeline}>
+        {/* background energy bars */}
+        {bars.length > 0 && (
+          <div className={styles.energyGraph}>
+            {bars.map((b, i) => (
+              <div
+                key={i}
+                className={styles.energyBar}
+                style={{ height: `${(b.rms / maxRms) * 100}%` }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* overlay: vocal segments */}
+        <div className={styles.timelineOverlay}>
+          {vocals.map((seg, i) => {
+            const left = (seg.start / duration) * 100;
+            const width = ((seg.end - seg.start) / duration) * 100;
+            return (
+              <div
+                key={i}
+                className={styles.timelineVocal}
+                style={{ left: `${left}%`, width: `${width}%` }}
+              />
+            );
+          })}
+
+          {/* overlay: drops */}
+          {drops.map((t, i) => {
+            const left = (t / duration) * 100;
+            return (
+              <div
+                key={i}
+                className={styles.timelineDrop}
+                style={{ left: `${left}%` }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- AI text block ----------
+function AIBlock({
+  title,
+  body,
+  bullets,
+}: {
+  title: string;
+  body?: string | null;
+  bullets?: string[];
+}) {
+  if (!body && !bullets?.length) return null;
+  return (
+    <div className={styles.aiText}>
+      <div className={styles.aiTextTitle}>{title}</div>
+      {body && <p className={styles.aiTextBody}>{body}</p>}
+      {bullets?.length ? (
+        <ul className={styles.aiBulletList}>
+          {bullets.slice(0, 6).map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+// ---------- main component ----------
 const AnalyzeComplete = () => {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<ReqBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabKey>("ai"); // land on AI if present
+  const [tab, setTab] = useState<TabKey>("ai");
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+
+  const [intrinsicDuration, setIntrinsicDuration] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     (async () => {
@@ -147,7 +325,6 @@ const AnalyzeComplete = () => {
         setLoading(true);
         const res = await api(`/feedback/requests/${id}`);
         setData(res);
-        // choose initial tab smartly
         if (res?.ai_feedback) setTab("ai");
         else if (res?.features?.main) setTab("features");
         else setTab("metrics");
@@ -163,12 +340,10 @@ const AnalyzeComplete = () => {
   const filename = data?.upload?.filename ?? "";
   const format = extFromFilename(filename);
 
-  // Prefer feature duration if upload one is missing
-  const durationSecs: number | null =
+  const durationSecsFromData: number | null =
     (data?.upload?.duration ?? null) ??
     (data?.features?.main?.duration ?? null) ??
     null;
-  const duration = formatSeconds(durationSecs);
 
   const tempo = data?.features?.main?.tempo as number | undefined;
   const keySig = data?.features?.main?.key as string | undefined;
@@ -178,25 +353,101 @@ const AnalyzeComplete = () => {
     peakObj && typeof peakObj === "object" && Number.isFinite(peakObj?.dbfs)
       ? `${Math.round(Number(peakObj.dbfs))} dBFS`
       : peakObj && Number.isFinite(Number(peakObj))
-      ? `${Math.round(Number(peakObj))} (lin)`
-      : emdash;
+        ? `${Math.round(Number(peakObj))} (lin)`
+        : emdash;
 
   const flatness = data?.features?.main?.flatness as number | undefined;
-
-  // tiles: useful quick facts
   const centroid = data?.features?.main?.spectral_centroid;
   const rolloff = data?.features?.main?.spectral_rolloff;
   const bandwidth = data?.features?.main?.bandwidth;
+
   const fileSizeMb = data?.upload?.size_mb;
 
+  const energyProfile = data?.features?.main?.energy_profile as
+    | { t: number; rms: number }[]
+    | undefined;
+
   const audioSrc = buildAudioUrl(data?.upload?.file_path);
-  console.log("audioSrc", audioSrc);
+  console.log("Audio src", { audioSrc });
+
+  const totalDurationForUI = durationSecsFromData ?? intrinsicDuration ?? null;
+
+  const durationLabel = formatSeconds(totalDurationForUI ?? durationSecsFromData);
 
   const scoreText = useMemo(() => {
     if (data?.computed?.overall_score == null) return emdash;
     const x = Number(data.computed.overall_score);
     return Number.isFinite(x) ? x.toFixed(1) : emdash;
   }, [data?.computed?.overall_score]);
+
+  // audio event wiring
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTime = () => setCurrentTime(audio.currentTime || 0);
+    const handleLoaded = () => setIntrinsicDuration(audio.duration || null);
+    const handleEnded = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    audio.addEventListener("timeupdate", handleTime);
+    audio.addEventListener("loadedmetadata", handleLoaded);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTime);
+      audio.removeEventListener("loadedmetadata", handleLoaded);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+    };
+  }, [audioSrc]);
+
+  // reset when new audio path comes in
+  useEffect(() => {
+    setCurrentTime(0);
+    setIsPlaying(false);
+  }, [audioSrc]);
+
+  const progressPct =
+    totalDurationForUI && totalDurationForUI > 0
+      ? Math.min(100, Math.max(0, (currentTime / totalDurationForUI) * 100))
+      : 0;
+
+  const handlePlayToggle = async () => {
+  const audio = audioRef.current;
+
+  if (!audio || !audioSrc) {
+    console.warn("No audio element or source", { audio, audioSrc });
+    return;
+  }
+
+  try {
+    if (audio.paused) {
+      await audio.play();
+      setIsPlaying(true);
+    } else {
+      audio.pause();
+      setIsPlaying(false);
+    }
+  } catch (err) {
+    console.error("Error playing audio:", err);
+  }
+};
+
+
+  const handleSeek = (e: MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !totalDurationForUI || totalDurationForUI <= 0) return;
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const newTime = ratio * totalDurationForUI;
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
 
   if (loading) {
     return (
@@ -227,18 +478,14 @@ const AnalyzeComplete = () => {
     );
   }
 
-  const selFocus = data.selections?.feedback_focus ?? data.upload?.feedback_focus ?? null;
+  const selFocus =
+    data.selections?.feedback_focus ?? data.upload?.feedback_focus ?? null;
   const selGenre = data.selections?.genre ?? data.upload?.genre ?? null;
   const selNote = data.selections?.user_note ?? null;
 
-  // snapshot metrics (if you ever populate them)
   const snapshot = data?.features?.main?.summary_snapshot ?? null;
-  const danceability = snapshot?.danceability ?? null;
-  const valence = snapshot?.valence ?? null;
-  const liveness = snapshot?.liveness ?? null;
-  const acousticness = snapshot?.acousticness ?? null;
-  const instrumentalness = snapshot?.instrumentalness ?? null;
 
+  // ---------- render ----------
   return (
     <div className={styles.page}>
       {/* Top bar */}
@@ -249,17 +496,30 @@ const AnalyzeComplete = () => {
               TRAK<span>CHEK</span>
             </div>
             <div className={styles.navRight}>
-              <Link to="/" className={styles.navLink}>Home</Link>
-              <Link to="/upload" className={`${styles.navLink} ${styles.navLinkOutline}`}>Upload</Link>
-              <Link to="/pricing" className={styles.navLink}>Pricing</Link>
-              <Link to="/forum" className={styles.navLink}>Forum</Link>
-              <Link to="/login" className={styles.loginBtn}>Login</Link>
+              <Link to="/" className={styles.navLink}>
+                Home
+              </Link>
+              <Link
+                to="/upload"
+                className={`${styles.navLink} ${styles.navLinkOutline}`}
+              >
+                Upload
+              </Link>
+              <Link to="/pricing" className={styles.navLink}>
+                Pricing
+              </Link>
+              <Link to="/forum" className={styles.navLink}>
+                Forum
+              </Link>
+              <Link to="/login" className={styles.loginBtn}>
+                Login
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Title + actions */}
+      {/* Header / file row */}
       <div className={styles.headerWrap}>
         <h1 className={styles.title}>Analysis Complete</h1>
 
@@ -270,10 +530,28 @@ const AnalyzeComplete = () => {
           </div>
 
           <div className={styles.actions}>
-            {/* takes you to homepage as requested */}
-            <Link to="/" className={`${styles.ghostBtn} ${styles.actionBtn}`}>Analyze another track</Link>
-            <button className={`${styles.ghostBtn} ${styles.actionBtn}`} type="button" disabled title="Coming soon">Share</button>
-            <button className={`${styles.ghostBtn} ${styles.actionBtn}`} type="button" disabled title="Coming soon">Export report</button>
+            <Link to="/" className={`${styles.ghostBtn} ${styles.actionBtn}`}>
+              <img src={AnalyzeAnotherIcon} alt="" className={styles.btnIcon} />
+              <span>Analyze another track</span>
+            </Link>
+            <button
+              className={`${styles.ghostBtn} ${styles.actionBtn}`}
+              type="button"
+              disabled
+              title="Coming soon"
+            >
+              <img src={ShareIcon} alt="" className={styles.btnIcon} />
+              <span>Share</span>
+            </button>
+            <button
+              className={`${styles.ghostBtn} ${styles.actionBtn}`}
+              type="button"
+              disabled
+              title="Coming soon"
+            >
+              <img src={ExportReportIcon} alt="" className={styles.btnIcon} />
+              <span>Export report</span>
+            </button>
           </div>
         </div>
 
@@ -289,7 +567,9 @@ const AnalyzeComplete = () => {
           </div>
           <div className={styles.selectionItemWide} title={selNote || ""}>
             <span className={styles.selectionLabel}>Note</span>
-            <span className={styles.selectionValue}>{selNote || "No note provided"}</span>
+            <span className={styles.selectionValue}>
+              {selNote || "No note provided"}
+            </span>
           </div>
         </div>
       </div>
@@ -297,13 +577,13 @@ const AnalyzeComplete = () => {
       {/* Score pill */}
       <div className={styles.scoreCard}>
         <div className={styles.scoreLeft}>
-          <div className={styles.noteIcon} aria-hidden="true" />
           <div className={styles.scoreValue}>{scoreText}</div>
         </div>
         <div className={styles.scoreText}>
           <div className={styles.scoreTitle}>Overall Score</div>
           <div className={styles.scoreSub}>
-            Combines mix, arrangement, creativity, and quality to show how polished and release-ready your track is.
+            Combines mix, arrangement, creativity, and quality to show how polished
+            and release-ready your track is.
           </div>
         </div>
       </div>
@@ -326,198 +606,278 @@ const AnalyzeComplete = () => {
               <div className={styles.vertSep} />
               <div className={styles.infoCell}>
                 <div className={styles.infoLabel}>Duration</div>
-                <div className={styles.infoValue}>{duration}</div>
+                <div className={styles.infoValue}>{durationLabel}</div>
               </div>
             </div>
           </div>
 
-          {/* Real audio player */}
+          {/* Custom audio player */}
           <div className={styles.playerWrap}>
-            {audioSrc ? (
-              <audio
-                ref={audioRef}
-                className={styles.audio}
-                src={audioSrc}
-                controls
-                preload="metadata"
-              />
-            ) : (
-              <div className={styles.audioEmpty}>Audio file unavailable.</div>
-            )}
+            <div className={styles.playerInner}>
+              <button
+                type="button"
+                className={styles.playBtn}
+                onClick={handlePlayToggle}
+                aria-label={isPlaying ? "Pause" : "Play"}
+              >
+                <img
+                  src={isPlaying ? PauseAudioIcon : PlayAudioIcon}
+                  alt=""
+                  className={styles.playIcon}
+                />
+              </button>
+
+              <div className={styles.playerMain}>
+                <div className={styles.wave} onClick={handleSeek}>
+                  <div className={styles.waveBg} />
+                  <div
+                    className={styles.waveProgress}
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <div className={styles.timeRow}>
+                  <span className={styles.timeLabel}>
+                    {formatSeconds(currentTime)}
+                  </span>
+                  <span className={styles.timeLabel}>{durationLabel}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Hidden but always-mounted audio element for ref */}
+           
+<audio
+  ref={audioRef}
+  src={audioSrc || undefined}
+  preload="metadata"
+  crossOrigin="anonymous"
+  onError={() => {
+    const a = audioRef.current;
+    const code = a?.error?.code; // 1..4
+  }}
+  className={styles.hiddenAudio}
+/>
+
+
           </div>
 
-          {/* Badges */}
+          {/* Badges row (tempo/key/loudness/file size) */}
           <div className={styles.badges}>
             <div className={styles.badge}>
+              <img src={TempoIcon} alt="" className={styles.badgeIcon} />
               <span className={styles.badgeLabel}>Tempo</span>
               <span className={styles.badgeValue}>
                 {tempo != null ? `${Math.round(tempo)} BPM` : emdash}
               </span>
             </div>
             <div className={styles.badge}>
+              <img src={KeyIcon} alt="" className={styles.badgeIcon} />
               <span className={styles.badgeLabel}>Key</span>
               <span className={styles.badgeValue}>{keySig || emdash}</span>
             </div>
             <div className={styles.badge}>
+              <img src={LoudnessIcon} alt="" className={styles.badgeIcon} />
               <span className={styles.badgeLabel}>Loudness</span>
               <span className={styles.badgeValue}>{loudnessText}</span>
             </div>
             <div className={styles.badge}>
-              <span className={styles.badgeLabel}>Flatness</span>
+              <img src={EnergyIcon} alt="" className={styles.badgeIcon} />
+              <span className={styles.badgeLabel}>File Size</span>
               <span className={styles.badgeValue}>
-                {flatness != null ? Number(flatness).toFixed(3) : emdash}
+                {fileSizeMb ? `${fileSizeMb.toFixed(2)} MB` : emdash}
               </span>
             </div>
           </div>
 
-          {/* Quick facts tiles (replacing sample rate/bitrate/time signature) */}
-          <div className={styles.tileGrid}>
-            <div className={styles.tile}>
-              <div className={styles.tileLabel}>File Size</div>
-              <div className={styles.tileValue}>
-                {fileSizeMb ? `${fileSizeMb.toFixed(2)} MB` : emdash}
-              </div>
-            </div>
-            <div className={styles.tile}>
-              <div className={styles.tileLabel}>Spectral Centroid</div>
-              <div className={styles.tileValue}>{fmtNum(centroid, "Hz")}</div>
-            </div>
-            <div className={styles.tile}>
-              <div className={styles.tileLabel}>Spectral Rolloff</div>
-              <div className={styles.tileValue}>{fmtNum(rolloff, "Hz")}</div>
-            </div>
-            <div className={styles.tile}>
-              <div className={styles.tileLabel}>Bandwidth</div>
-              <div className={styles.tileValue}>{fmtNum(bandwidth, "Hz")}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right column with tabs */}
-        <div className={styles.rightCol}>
+          {/* Tabs row */}
           <div className={styles.tabsRow}>
             <button
-              className={`${styles.tab} ${tab === "features" ? styles.tabActive : ""}`}
+              className={`${styles.tab} ${tab === "metrics" ? styles.tabActive : ""
+                }`}
+              onClick={() => setTab("metrics")}
+              type="button"
+            >
+              <img src={AudioMetricsIcon} alt="" className={styles.tabIcon} />
+              <span>Audio Metrics</span>
+            </button>
+            <button
+              className={`${styles.tab} ${tab === "features" ? styles.tabActive : ""
+                }`}
               onClick={() => setTab("features")}
               type="button"
             >
-              Spectral / Features
+              <img src={SpectralAnalysisIcon} alt="" className={styles.tabIcon} />
+              <span>Spectral Analysis</span>
             </button>
             <button
-              className={`${styles.tab} ${tab === "ai" ? styles.tabActive : ""}`}
+              className={`${styles.tab} ${tab === "ai" ? styles.tabActive : ""
+                }`}
               onClick={() => setTab("ai")}
               type="button"
             >
-              AI Feedback
+              <img src={AiInsightsIcon} alt="" className={styles.tabIcon} />
+              <span>AI Insights</span>
             </button>
           </div>
 
-          {/* Tab panels */}
-          {tab === "metrics" && (
-            <div className={styles.metricsCol}>
-              {renderMetricIfPresent("Danceability", "How suitable the track is for dancing.", danceability)}
-              {renderMetricIfPresent("Valence", "Musical positivity and uplifting quality.", valence)}
-              {renderMetricIfPresent("Instrumentalness", "Predicts whether a track contains vocals.", instrumentalness)}
-              {renderMetricIfPresent("Liveness", "Performance recorded with audience ambience.", liveness)}
-              {renderMetricIfPresent("Acousticness", "Likelihood of the track being acoustic.", acousticness)}
-              {danceability == null &&
-                valence == null &&
-                instrumentalness == null &&
-                liveness == null &&
-                acousticness == null && (
-                  <div className={styles.metricsEmpty}>
-                    No summarized audio metrics available for this track yet.
+          {/* Tab panels directly under tabs */}
+          <div className={styles.tabPanels}>
+            {tab === "metrics" && (
+              <>
+                {/* Optional snapshot metrics if present */}
+                {snapshot?.danceability != null && (
+                  <div className={styles.metricRowSimple}>
+                    <div className={styles.metricLabel}>Danceability</div>
+                    <div className={styles.metricValue}>
+                      {pct(snapshot.danceability)}
+                    </div>
                   </div>
                 )}
-            </div>
-          )}
+                {snapshot?.valence != null && (
+                  <div className={styles.metricRowSimple}>
+                    <div className={styles.metricLabel}>Valence</div>
+                    <div className={styles.metricValue}>
+                      {pct(snapshot.valence)}
+                    </div>
+                  </div>
+                )}
+                {snapshot?.liveness != null && (
+                  <div className={styles.metricRowSimple}>
+                    <div className={styles.metricLabel}>Liveness</div>
+                    <div className={styles.metricValue}>
+                      {pct(snapshot.liveness)}
+                    </div>
+                  </div>
+                )}
+                {snapshot?.acousticness != null && (
+                  <div className={styles.metricRowSimple}>
+                    <div className={styles.metricLabel}>Acousticness</div>
+                    <div className={styles.metricValue}>
+                      {pct(snapshot.acousticness)}
+                    </div>
+                  </div>
+                )}
+                {snapshot?.instrumentalness != null && (
+                  <div className={styles.metricRowSimple}>
+                    <div className={styles.metricLabel}>Instrumentalness</div>
+                    <div className={styles.metricValue}>
+                      {pct(snapshot.instrumentalness)}
+                    </div>
+                  </div>
+                )}
 
-          {tab === "features" && (
-            <div className={styles.featuresPanel}>
-              <KV title="Spectral Centroid" value={fmtNum(centroid, "Hz")} />
-              <KV title="Spectral Rolloff" value={fmtNum(rolloff, "Hz")} />
-              <KV title="Bandwidth" value={fmtNum(bandwidth, "Hz")} />
-              <KV title="Flatness" value={flatness != null ? Number(flatness).toFixed(6) : emdash} />
-              <KV
-                title="Transient count"
-                value={Array.isArray(data?.features?.main?.transients_info) ? data!.features!.main!.transients_info.length : emdash}
-              />
-              <KV
-                title="Drop timestamps"
-                value={Array.isArray(data?.features?.main?.drop_timestamps) ? data!.features!.main!.drop_timestamps.length : emdash}
-              />
-              <KV
-                title="Vocal events"
-                value={Array.isArray(data?.features?.main?.vocal_timestamps) ? data!.features!.main!.vocal_timestamps.length : emdash}
-              />
-              <div className={styles.noteBox}>
-                Extracted at:{" "}
-                {data?.features?.main?.extracted_at ? new Date(data.features.main.extracted_at).toLocaleString() : emdash}
+                <EnergyTimeline
+                  duration={totalDurationForUI ?? durationSecsFromData ?? null}
+                  energyProfile={energyProfile}
+                  vocalSegments={data?.features?.main?.vocal_timestamps}
+                  dropTimestamps={data?.features?.main?.drop_timestamps}
+                />
+              </>
+            )}
+
+            {tab === "features" && (
+              <div className={styles.metricsCol}>
+                <KV title="Spectral Centroid" value={fmtNum(centroid, "Hz")} />
+            <KV title="Spectral Rolloff" value={fmtNum(rolloff, "Hz")} />
+            <KV title="Bandwidth" value={fmtNum(bandwidth, "Hz")} />
+                <EnergyGraph profile={energyProfile} />
               </div>
-            </div>
-          )}
+            )}
 
-          {tab === "ai" && (
-            <div className={styles.aiPanel}>
-              <div className={styles.aiScoreGrid}>
-                <ScoreTile label="Mix Quality" value={data?.ai_feedback?.mix_quality_score} />
-                <ScoreTile label="Arrangement" value={data?.ai_feedback?.arrangement_score} />
-                <ScoreTile label="Creativity" value={data?.ai_feedback?.creativity_score} />
-                <ScoreTile label="Suggestions" value={data?.ai_feedback?.suggestions_score} />
+            {tab === "ai" && (
+              <div className={styles.metricsCol}>
+                {data.ai_feedback && (
+                  <div className={styles.aiPanel}>
+                    <div className={styles.noteBox}>
+                      AI Scores:
+                    </div>
+                    <div className={styles.aiScoreGrid}>
+                      <ScoreTile
+                        label="Mix Quality"
+                        value={data.ai_feedback.mix_quality_score}
+                      />
+                      <ScoreTile
+                        label="Arrangement"
+                        value={data.ai_feedback.arrangement_score}
+                      />
+                      <ScoreTile
+                        label="Creativity"
+                        value={data.ai_feedback.creativity_score}
+                      />
+                      <ScoreTile
+                        label="Suggestions"
+                        value={data.ai_feedback.suggestions_score}
+                      />
+                    </div>
+                  </div>
+                )}
+                <AIBlock
+                  title="Mix Quality"
+                  body={data?.ai_feedback?.mix_quality_text}
+                  bullets={data?.ai_feedback?.recommendations?.mix_quality}
+                />
+                <AIBlock
+                  title="Arrangement"
+                  body={data?.ai_feedback?.arrangement_text}
+                  bullets={data?.ai_feedback?.recommendations?.arrangement}
+                />
+                <AIBlock
+                  title="Creativity"
+                  body={data?.ai_feedback?.creativity_text}
+                  bullets={data?.ai_feedback?.recommendations?.creativity}
+                />
+                <AIBlock
+                  title="Overall Suggestions"
+                  body={data?.ai_feedback?.suggestions_text}
+                  bullets={
+                    data?.ai_feedback?.recommendations
+                      ?.suggestions_for_improvement
+                  }
+                />
               </div>
+            )}
+          </div>
+        </div>
 
-              <AIBlock
-                title="Mix Quality"
-                body={data?.ai_feedback?.mix_quality_text}
-                bullets={data?.ai_feedback?.recommendations?.mix_quality}
-              />
-              <AIBlock
-                title="Arrangement"
-                body={data?.ai_feedback?.arrangement_text}
-                bullets={data?.ai_feedback?.recommendations?.arrangement}
-              />
-              <AIBlock
-                title="Creativity"
-                body={data?.ai_feedback?.creativity_text}
-                bullets={data?.ai_feedback?.recommendations?.creativity}
-              />
-              <AIBlock
-                title="Overall Suggestions"
-                body={data?.ai_feedback?.suggestions_text}
-                bullets={data?.ai_feedback?.recommendations?.suggestions_for_improvement}
-              />
+        {/* Right column – always-visible stats */}
+        <div className={styles.rightCol}>
+          <div className={styles.featuresPanel}>
+            <KV
+              title="Flatness"
+              value={
+                flatness != null ? Number(flatness).toFixed(6) : (emdash as any)
+              }
+            />
+            <KV
+              title="Transient count"
+              value={
+                Array.isArray(data?.features?.main?.transients_info)
+                  ? data.features.main.transients_info.length
+                  : emdash
+              }
+            />
+            <KV
+              title="Drop events"
+              value={
+                Array.isArray(data?.features?.main?.drop_timestamps)
+                  ? data.features.main.drop_timestamps.length
+                  : emdash
+              }
+            />
+            <KV
+              title="Vocal events"
+              value={
+                Array.isArray(data?.features?.main?.vocal_timestamps)
+                  ? data.features.main.vocal_timestamps.length
+                  : emdash
+              }
+            />
+          </div>
 
-              <div className={styles.metaRow}>
-                <span>Model: {data?.ai_feedback?.model || emdash}</span>
-                <span>Prompt v{data?.ai_feedback?.prompt_version || emdash}</span>
-                <span>
-                  Generated:{" "}
-                  {data?.ai_feedback?.created_at ? new Date(data.ai_feedback.created_at).toLocaleString() : emdash}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 };
-
-function AIBlock({ title, body, bullets }: { title: string; body?: string | null; bullets?: string[] }) {
-  if (!body && !bullets?.length) return null;
-  return (
-    <div className={styles.aiText}>
-      <div className={styles.aiTextTitle}>{title}</div>
-      {body && <p className={styles.aiTextBody}>{body}</p>}
-      {bullets?.length ? (
-        <ul className={styles.aiBulletList}>
-          {bullets.slice(0, 6).map((t, i) => (
-            <li key={i}>{t}</li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
 
 export default AnalyzeComplete;
