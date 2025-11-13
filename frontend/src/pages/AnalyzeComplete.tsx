@@ -80,7 +80,7 @@ const emdash = "—";
 function uploadsBase() {
   // Optional: VITE_UPLOAD_BASE can be "https://trackcheck..." in prod
   // If not set, we assume same-origin and just use "/uploads"
-  return (import.meta as any)?.env?.VITE_UPLOAD_BASE ?? "http://localhost:8000";
+  return (import.meta as any)?.env?.VITE_UPLOAD_BASE ?? "";
 }
 
 function buildAudioUrl(relPath?: string | null) {
